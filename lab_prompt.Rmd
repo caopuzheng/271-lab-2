@@ -17,18 +17,18 @@ library(tsibble)
 library(latex2exp)
 
 theme_set(theme_minimal())
-knitr::opts_chunk$set(dpi=1000)
+knitr::opts_chunk$set(dpi = 1000)
 ```
 
 ```{r plot the keeling curve, echo = FALSE}
 tsibble::as_tsibble(co2) %>%
-  ggplot() + 
-  aes(x=index, y=value) + 
-  geom_line(color = 'steelblue') +
+  ggplot() +
+  aes(x = index, y = value) +
+  geom_line(color = "steelblue") +
   labs(
     title = TeX(r'(Monthly Mean $CO_2$)'),
     subtitle = 'The "Keeling Curve"',
-    x = 'Month and Year',
+    x = "Month and Year",
     y = TeX(r'($CO_2$ parts per million)')
   )
 ```
