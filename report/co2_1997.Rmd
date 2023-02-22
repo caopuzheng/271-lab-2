@@ -150,6 +150,7 @@ co2 %>% ggtsdisplay(main="")
 ```
 > time series plot: strong positive correlation
 > ACF: strong positive correlation with slight bumps suggest seasonality, which makes sense based on our EDA. ACF is positive for all the lags, so the series needs further differencing.
+> PACF: suggests that this is an AR(2) model.
 
 ```{r}
 # 1st DIFFERENCING
@@ -157,7 +158,7 @@ diff(co2) %>% ggtsdisplay(main="")
 ```
 > The right order of differencing is the minimum differencing required to get a near-stationary series which roams around a defined mean and the ACF plot reaches to zero fairly quick. You need differencing only if the series is non-stationary. Else, no differencing is needed, that is, d=0.
 The origin data are clearly non-stationary, as the series has a strong positive correlation. Consequently, we will take a first difference of the data. The differenced data are shown above. These look stationary, and so we will not consider further differences.
-> The PACF shown above is suggestive of an AR(3) model. So an initial candidate model is an ARIMA(3,1,1). There are no other obvious candidate models.
+> TODO - how to explain plots?
 
 
 ```{r}
