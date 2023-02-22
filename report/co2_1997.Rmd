@@ -1,1 +1,193 @@
-You will fill this file with all of your work, from the point of view of 1997!
+---
+title: 'W271 Lab 2: CO2 1997'
+geometry: margin=1in
+output:
+  github_document: default
+---
+
+```{r load packages, echo = FALSE, message = FALSE}
+library(tidyverse)
+library(tsibble)
+library(latex2exp)
+theme_set(theme_minimal())
+knitr::opts_chunk$set(dpi=1000)
+
+# additional packages
+library(dplyr)
+library(Hmisc)
+library(patchwork)
+library(forecast)
+library(stargazer)
+library(gridExtra)
+```
+
+
+## (3 points) Task 0a: Introduction 
+
+
+## (3 points) Task 1a: CO2 data
+
+```{r}
+# basic information about the data
+print(sum(is.na(co2)))
+print(start(co2))
+print(end(co2))
+```
+> The data starts from 1959 Jan and ends in 1997 Dec. There are no missing values.
+
+```{r}
+tsibble::as_tsibble(co2) %>%
+  ggplot() + 
+  aes(x=index, y=value) + 
+  geom_line(color = 'steelblue') +
+  labs(
+    title = TeX(r'(Monthly Mean $CO_2$)'),
+    subtitle = 'The "Keeling Curve"',
+    x = 'Month and Year',
+    y = TeX(r'($CO_2$ parts per million)')
+  )
+```
+
+
+```{r}
+dcmp <- decompose(co2, "multiplicative")
+plot(dcmp)
+```
+> trend: strong positive linear trend across years
+> irregular elements: Nothing in the random plot. The data oscilate around 0.
+> seasonality: strong seasonality - will explore details in next plot
+
+```{r}
+boxplot(co2~cycle(co2, xlab="Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
+```
+> seasonal: Lowest in October and highest in May 
+
+
+## (3 points) Task 2a: Linear time trend model
+
+```{r}
+# Fit a linear time trend model examine the characteristics of the residuals
+mod.lm1 = lm(co2 ~ time(co2))
+summary(mod.lm1)
+plot(mod.lm1, which=c(1,1))
+```
+> residuals for linear model forms a curved line
+
+```{r}
+# quadratic time trend model.
+mod.lm2 = lm(co2 ~ time(co2) + I(time(co2)^2))
+summary(mod.lm2)
+plot(mod.lm2, which=c(1,1))
+```
+> residuals for quadratic model is consistently closer to 0.
+
+
+```{r}
+# Discuss whether a logarithmic transformation of the data would be appropriate. 
+
+```
+
+
+```{r}
+# Fit a polynomial time trend model that incorporates seasonal dummy variables, and use this model to generate forecasts to the year 2020. 
+
+
+# function to be AIC and BIC scores
+eval_results = function(models){
+# calculate from models
+aic_results = lapply(models, function(model) AIC(model))
+bic_results = lapply(models, function(model) BIC(model))
+# flatten list
+aic_results = unlist(aic_results, recursive = TRUE, use.names = TRUE)
+bic_results = unlist(bic_results, recursive = TRUE, use.names = TRUE)
+results = data.frame(modelname = names(models), aic=aic_results, bic=bic_results)
+return(results)
+}
+
+# fine-tune polynomial model
+models=list()
+for (tdeg in 1:4){
+  for (sdeg in 1:4){
+    fit <- tslm(co2 ~ poly(trend,tdeg) + poly(season,sdeg))
+    models[[paste(tdeg,sdeg,sep='_')]]=fit
+  }
+}
+results = eval_results(models)
+# plot AIC/BIC of polynomial models
+results %>%
+    gather(key = "name", value = "value", aic, bic) %>%
+    ggplot(aes(x = modelname, y = value, colour=name, group=name)) +
+    geom_point() +
+    geom_line() +
+    xlab("Number of Parameters") +
+    ylab("AIC/BIC")
+# based on graph, trend degree = 3 and season degree = 4 looks the best
+```
+
+```{r} 
+
+mod.poly <- tslm(co2 ~ poly(trend,3) + poly(season,4))
+summary(mod.poly)
+par(mfrow = c(2, 2))
+plot(mod.poly$residuals)
+plot(forecast::forecast(mod.poly, h=20*12))
+
+```
+
+
+## (3 points) Task 3a: ARIMA times series model
+
+> For the ARIMA model, we can conjecture the following parameters:
+> p: the number of lag observations in the model, also known as the lag order. Inspect PACF plot.
+> d: the number of times the raw observations are differenced; also known as the degree of differencing. 
+> q: the size of the moving average window, also known as the order of the moving average. ACF tells how many MA terms are required to remove any autocorrelation in the stationarized series.
+
+```{r, echo=F, message=F}
+# first step, no differencing
+
+co2 %>% ggtsdisplay(main="")
+
+```
+> time series plot: strong positive correlation
+> ACF: strong positive correlation with slight bumps suggest seasonality, which makes sense based on our EDA. ACF is positive for all the lags, so the series needs further differencing.
+
+```{r}
+# 1st DIFFERENCING
+diff(co2) %>% ggtsdisplay(main="")
+```
+> The right order of differencing is the minimum differencing required to get a near-stationary series which roams around a defined mean and the ACF plot reaches to zero fairly quick. You need differencing only if the series is non-stationary. Else, no differencing is needed, that is, d=0.
+The origin data are clearly non-stationary, as the series has a strong positive correlation. Consequently, we will take a first difference of the data. The differenced data are shown above. These look stationary, and so we will not consider further differences.
+> The PACF shown above is suggestive of an AR(3) model. So an initial candidate model is an ARIMA(3,1,1). There are no other obvious candidate models.
+
+
+```{r}
+# TODO - check order parameter, and add other necessary parameters
+# TODO - how to manuall determine arima parameters?
+mod.arima = auto.arima(co2)
+summary(mod.arima)
+arima_pred <- forecast::forecast(mod.arima, level=c(95), h=22*12)
+plot(arima_pred)
+```
+
+
+## (3 points) Task 4a: Forecast atmospheric CO2 growth 
+```{r, echo=F}
+arima_pred <- forecast::forecast(mod.arima, level=c(95), h=110*12)
+plot(arima_pred)
+abline(h = 420, col='red')
+abline(h = 500, col='red')
+```
+
+
+```{r}
+lower = data.frame(arima_pred) %>%
+  filter(Point.Forecast >= 420) %>%
+  head(1)
+upper = data.frame(arima_pred) %>%
+  filter(Point.Forecast <= 500) %>%
+  tail(1)
+
+co2_bounds = rbind(lower, upper)
+co2_bounds
+```
+
