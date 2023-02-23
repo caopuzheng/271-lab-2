@@ -1,2 +1,99 @@
-You will fill this file with all your work from the point of view of the present! 
+---
+title: 'W271 Lab 2: CO2 Present'
+geometry: margin=1in
+output:
+  github_document: default
+---
 
+```{r load packages, echo = FALSE, message = FALSE}
+library(tidyverse)
+library(tsibble)
+library(latex2exp)
+theme_set(theme_minimal())
+knitr::opts_chunk$set(dpi=1000)
+
+# additional packages
+library(dplyr)
+library(Hmisc)
+library(patchwork)
+library(forecast)
+library(stargazer)
+library(gridExtra)
+
+## To laod All data sets in the book "Forecasting: principles and practice" 
+#by Rob J Hyndman and George Athanasopoulos
+# install.packages("fpp3")
+# install.packages("fpp2")
+
+library(fpp3)
+library(fpp2)
+```
+
+## (3 points) Task 0b: Introduction 
+Following up on the 1997 publication on the study on the time-dependent atmospheric $CO_2$ build up. Since then, atmospheric $CO_2$ has increases from 360 to 420 ppm.
+
+
+## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
+
+```{r data-load-pipeline}
+# read csv from link and save it as a data file
+co2_present <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv", sep = ",", skip=56)
+write.csv(co2_present, "./co2_present.csv")
+co2_present
+```
+```{r create-time-component}
+co2_present <- co2_present %>% 
+                mutate(time_index = lubridate::make_datetime(year = year, 
+                                                            month = month,
+                                                            day = 1)) %>%
+                tsibble::as_tsibble(key = decimal.date, 
+                                    index = time_index)
+co2_present
+```
+```{r}
+# basic information about the data
+print(sum(is.na(co2_present)))
+# print(start(co2_present$time_index))
+# print(end(co2_present$time_index))
+```
+
+```{r time-plot}
+co2_present %>%
+  ggplot() + 
+  aes(x=time_index, y=average) + 
+  geom_line(color = 'steelblue') +
+  labs(
+    title = TeX(r'(Present Date Monthly Mean $CO_2$)'),
+    subtitle = 'The "Keeling Curve"',
+    x = 'Month and Year',
+    y = TeX(r'($CO_2$ parts per million)')
+  )
+```
+
+
+```{r}
+p1 <- co2_present %>%
+  autoplot(average, colour="gray") +
+  geom_line(aes(y=deseasonalized), colour = "#D55E00") +
+  labs(y = "CO2 ppm", x="Time",
+    title = "Present Date Monthly Mean CO2")
+p1
+```
+
+
+
+## (1 point) Task 2b: Compare linear model forecasts against realized CO2
+```{r, original-linear-model}
+# Fit a linear time trend model examine the characteristics of the residuals
+mod.lm1 = lm(co2 ~ time(co2))
+summary(mod.lm1)
+plot(mod.lm1, which=c(1,1))
+
+# creating new data
+# forecast for n steps
+# new_data <- seq()
+# lin.forecast <- forecast::forecast(mod.lm1, level=c(95), h=110*12)
+# lin.forecast
+```
+
+## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
