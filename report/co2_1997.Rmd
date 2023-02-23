@@ -23,7 +23,7 @@ library(gridExtra)
 
 
 ## (3 points) Task 0a: Introduction 
-
+Observed by Charles D. Keeling in 1960, there is a systematic variation with season and latitude in the concentration and isotopic abundance of atmospheric carbon dioxide ($CO_2$). Here, we are interested in two questions. First, what is the overall trend and seasonality of the atmospheric $CO_2$ level? And second, whether or not atmospheric $CO_2$ level can be model effectively thorugh a combination of de-trending, smoothing averages, and ARIMA? Addressing these two issues will provide us a better understanding of $CO_2$ build up over time and to forecast for future effect. 
 
 ## (3 points) Task 1a: CO2 data
 
