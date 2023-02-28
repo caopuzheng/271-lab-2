@@ -45,8 +45,9 @@ co2_present
 co2_present <- co2_present %>% 
                 mutate(time_index = lubridate::make_datetime(year = year, 
                                                             month = month,
-                                                            day = 1)) %>%
-                tsibble::as_tsibble(key = decimal.date, 
+                                                            day = 1),
+                       year_month = yearmonth(time_index)) %>%
+                tsibble::as_tsibble(key = year_month, 
                                     index = time_index)
 co2_present
 ```
@@ -80,7 +81,15 @@ p1 <- co2_present %>%
 p1
 ```
 
+```{r decomposition}
 
+dcmp <- co2_present %>% 
+          drop_na() %>%
+          model(stl = STL(average)) 
+
+components(dcmp) %>% autoplot()
+
+```
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
 ```{r, original-linear-model}
