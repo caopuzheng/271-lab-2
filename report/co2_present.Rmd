@@ -42,24 +42,25 @@ write.csv(co2_present, "./co2_present.csv")
 co2_present
 ```
 ```{r create-time-component}
-co2_present <- co2_present %>% 
-                mutate(time_index = lubridate::make_datetime(year = year, 
-                                                            month = month,
-                                                            day = 1),
-                       year_month = yearmonth(time_index)) %>%
-                tsibble::as_tsibble(key = year_month, 
-                                    index = time_index)
-co2_present
+co2_present_ts <- co2_present %>% 
+                select(year, month, average, deseasonalized) %>%
+                mutate(time_index = yearmonth(lubridate::make_datetime(year = year, 
+                                                            month = month))) %>%
+                tsibble::as_tsibble(index = time_index)
+
+
+head(co2_present_ts)
 ```
+
 ```{r}
 # basic information about the data
-print(sum(is.na(co2_present)))
+print(sum(is.na(co2_present_ts)))
 # print(start(co2_present$time_index))
 # print(end(co2_present$time_index))
 ```
 
 ```{r time-plot}
-co2_present %>%
+co2_present_ts %>%
   ggplot() + 
   aes(x=time_index, y=average) + 
   geom_line(color = 'steelblue') +
@@ -73,7 +74,7 @@ co2_present %>%
 
 
 ```{r}
-p1 <- co2_present %>%
+p1 <- co2_present_ts %>%
   autoplot(average, colour="gray") +
   geom_line(aes(y=deseasonalized), colour = "#D55E00") +
   labs(y = "CO2 ppm", x="Time",
@@ -83,13 +84,15 @@ p1
 
 ```{r decomposition}
 
-dcmp <- co2_present %>% 
+dcmp <- co2_present_ts %>% 
           drop_na() %>%
-          model(stl = STL(average)) 
+          model(classical_decomposition(average, type = "multiplicative"))
 
 components(dcmp) %>% autoplot()
 
 ```
+> There seem to be a noticible non-linear relationship to the trend since 1970. However, the seasonality effect remains periodic and unchanged.
+
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
 ```{r, original-linear-model}
