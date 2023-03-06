@@ -46,8 +46,8 @@ co2_present_ts <- co2_present %>%
                 select(year, month, average, deseasonalized) %>%
                 mutate(time_index = yearmonth(lubridate::make_datetime(year = year, 
                                                             month = month))) %>%
-                tsibble::as_tsibble(index = time_index)
-
+                tsibble::as_tsibble(index = time_index) %>% 
+                drop_na()
 
 head(co2_present_ts)
 ```
@@ -83,18 +83,50 @@ p1
 ```
 
 ```{r decomposition}
-
 dcmp <- co2_present_ts %>% 
-          drop_na() %>%
-          model(classical_decomposition(average, type = "multiplicative"))
+          model(classical_decomposition(average, type = "additive"))
 
 components(dcmp) %>% autoplot()
 
 ```
 > There seem to be a noticible non-linear relationship to the trend since 1970. However, the seasonality effect remains periodic and unchanged.
 
+```{r ETSDA plots}
+co2_present_ts <- co2_present_ts %>% 
+                  mutate(average_4_month_MA = slider::slide_dbl(average, mean,
+                                  .before = 3, .after = 0, .complete = TRUE))
+
+# plot the series
+series <- co2_present_ts %>%
+            ggplot() +
+            geom_point(aes(x = time_index, y = average)) +
+            geom_line(aes(x=time_index, y=average_4_month_MA), color = 'red') +
+            ggtitle("CO2 Level Time Series") +
+            xlab("Date") +
+            ylab("CO2 (ppm)")
+
+# plot of histogram
+histogram <- co2_present_ts %>% 
+            ggplot(aes(x=average)) +
+            geom_histogram(color="black", fill="white", binswidth=10) +
+            ggtitle("CO2 Level Histogram") +
+            xlab("CO2 (ppm)")
+
+
+# plot acf and pacf
+acf <- ggAcf(co2_present_ts$average, level=0.95)
+pacf <- ggPacf(co2_present_ts$average, level=0.95)
+
+(series | histogram) /
+(acf | pacf)
+```
+>'Non-Stationary, Trends in Features applying 1st order diff'
+
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
+
+Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. "Task 2a"). (You do not need to run any formal tests for this task.) 
+
 ```{r, original-linear-model}
 # Fit a linear time trend model examine the characteristics of the residuals
 mod.lm1 = lm(co2 ~ time(co2))
@@ -109,3 +141,51 @@ plot(mod.lm1, which=c(1,1))
 ```
 
 ## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
+
+
+Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present. 
+
+
+## (3 points) Task 4b: Evaluate the performance of 1997 linear and ARIMA models 
+
+In 1997 you made predictions about the first time that CO2 would cross 420 ppm. How close were your models to the truth? 
+
+After reflecting on your performance on this threshold-prediction task, continue to use the weekly data to generate a month-average series from 1997 to the present, and compare the overall forecasting performance of your models from Parts 2a and 3b over the entire period. (You should conduct formal tests for this task.) 
+
+## (4 points) Task 5b: Train best models on present data
+
+Seasonally adjust the weekly NOAA data, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. For both SA and NSA series, fit ARIMA models using all appropriate steps. Measure and discuss how your models perform in-sample and (psuedo-) out-of-sample, comparing candidate models and explaining your choice. In addition, fit a polynomial time-trend model to the seasonally-adjusted series and compare its performance to that of your ARIMA model.
+
+```{r first order diff ETSDA plot}
+# plot the series
+co2_present_ts$diff <- c(0, diff(co2_present_ts$average))
+
+series <- co2_present_ts %>%
+            ggplot(aes(x = time_index, y = diff)) +
+            geom_line() +
+            ggtitle("CO2 1st Order Difference Time Series") +
+            xlab("Date") +
+            ylab("CO2 (ppm)")
+
+# plot of histogram
+histogram <- co2_present_ts %>% 
+            ggplot(aes(x=diff)) +
+            geom_histogram(color="black", fill="white", binswidth=10) +
+            ggtitle("CO2 1st Order Difference Histogram") +
+            xlab("CO2 (ppm)")
+
+
+# plot acf and pacf
+acf <- ggAcf(pa$diff, level=0.95)
+pacf <- ggPacf(pa$diff, level=0.95)
+
+(series | histogram) /
+(acf | pacf)
+```
+> looks like white noise ...
+
+
+
+## (3 points) Task Part 6b: How bad could it get?
+
+With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
