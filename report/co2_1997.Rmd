@@ -10,7 +10,7 @@ library(tidyverse)
 library(tsibble)
 library(latex2exp)
 theme_set(theme_minimal())
-knitr::opts_chunk$set(dpi=1000)
+knitr::opts_chunk$set(dpi = 1000)
 
 # additional packages
 library(dplyr)
@@ -36,7 +36,6 @@ library(magrittr)
 library(sandwich)
 library(lmtest)
 library(blsR)
-
 ```
 
 
@@ -61,90 +60,97 @@ There is an upward trend of CO2 level between 1959 and 1997, with relatively con
 
 ```{r warning=FALSE, message=FALSE, out.width="65%"}
 p_1 <- tsibble::as_tsibble(co2) %>%
-  ggplot() + 
-  aes(x=index, y=value) + 
-  geom_line(color = 'steelblue') +
+  ggplot() +
+  aes(x = index, y = value) +
+  geom_line(color = "steelblue") +
   labs(
     title = TeX(r'(Monthly Mean $CO_2$)'),
     subtitle = 'The "Keeling Curve"',
-    x = 'Month and Year',
+    x = "Month and Year",
     y = TeX(r'($CO_2$ parts per million)')
-  ) +   theme(plot.title = element_text(size=10)) 
+  ) +
+  theme(plot.title = element_text(size = 10))
 
-#add the annualized growth rate and log value
+# add the annualized growth rate and log value
 co2_2 <- co2 %>%
   as_tsibble() %>%
-  mutate (Diff_growth = value - lag(value), # Difference in route between years
-         annual_growth = (Diff_growth *12)/lag(value) * 100,
-         log_value = log(value)
-         ) 
-#plot the log value
+  mutate(
+    Diff_growth = value - lag(value), # Difference in route between years
+    annual_growth = (Diff_growth * 12) / lag(value) * 100,
+    log_value = log(value)
+  )
+# plot the log value
 p_2 <- co2_2 %>%
-  ggplot() + 
-  aes(x=index, y=log_value) + 
-  geom_line(color = 'steelblue') +
-  labs(title = TeX(r'(Log Monthly Mean $CO_2$)'),
-       subtitle = 'The "Keeling Curve"',
-       x = 'Month and Year',
-       y = TeX(r'(Log of $CO_2$ parts per million)')) +
-    theme(plot.title = element_text(size=10)) 
+  ggplot() +
+  aes(x = index, y = log_value) +
+  geom_line(color = "steelblue") +
+  labs(
+    title = TeX(r'(Log Monthly Mean $CO_2$)'),
+    subtitle = 'The "Keeling Curve"',
+    x = "Month and Year",
+    y = TeX(r'(Log of $CO_2$ parts per million)')
+  ) +
+  theme(plot.title = element_text(size = 10))
 
-#plot the annualized growth rate
+# plot the annualized growth rate
 p_3 <- co2_2 %>%
-  ggplot() + 
-  aes(x=index, y=annual_growth) + 
-  geom_line(color = 'steelblue') +
-  labs(title = TeX(r'(Annualized Growth $CO_2$)'),
-       subtitle = 'The "Keeling Curve"',
-       x = 'Month and Year',
-       y = TeX(r'($CO_2$ Annualized Growth Rate)')) + 
-    theme(plot.title = element_text(size=10)) 
+  ggplot() +
+  aes(x = index, y = annual_growth) +
+  geom_line(color = "steelblue") +
+  labs(
+    title = TeX(r'(Annualized Growth $CO_2$)'),
+    subtitle = 'The "Keeling Curve"',
+    x = "Month and Year",
+    y = TeX(r'($CO_2$ Annualized Growth Rate)')
+  ) +
+  theme(plot.title = element_text(size = 10))
 
-#plot the histogram
+# plot the histogram
 p_4 <- co2_2 %>%
-  ggplot(aes(x=value)) + geom_histogram(binwidth=1) +
-  labs(title = TeX(r'(Histogram Monthly Mean $CO_2$)'), col=" blue") + 
-  xlab("Monthly Mean") + 
-  theme(plot.title = element_text(size=10)) 
-  # scale_x_continuous(limits = c(0, 16), breaks = seq(1,16,2))
+  ggplot(aes(x = value)) +
+  geom_histogram(binwidth = 1) +
+  labs(title = TeX(r'(Histogram Monthly Mean $CO_2$)'), col = " blue") +
+  xlab("Monthly Mean") +
+  theme(plot.title = element_text(size = 10))
+# scale_x_continuous(limits = c(0, 16), breaks = seq(1,16,2))
 
-(p_1 | p_2)/(p_3|p_4)
-
+(p_1 | p_2) / (p_3 | p_4)
 ```
 
 
 ```{r additive SLT decomposting}
-#Use additive method in STL decomposition
+# Use additive method in STL decomposition
 dcmp_add <- co2_2 %>%
   model(stl = STL(value))
 
 p_5_add <- components(dcmp_add) %>%
   as_tsibble() %>%
-  autoplot(value, colour="gray") +
-  geom_line(aes(y=trend), colour = "#D55E00") +
-  labs(y = TeX(r'($CO_2$ Annualized Growth Rate)'), 
-       x="Month and Year",
-       title = "Monthly Mean CO2") +
-  theme(plot.title = element_text(size=10)) 
+  autoplot(value, colour = "gray") +
+  geom_line(aes(y = trend), colour = "#D55E00") +
+  labs(
+    y = TeX(r'($CO_2$ Annualized Growth Rate)'),
+    x = "Month and Year",
+    title = "Monthly Mean CO2"
+  ) +
+  theme(plot.title = element_text(size = 10))
 
-#plot the components
-p_6_add <- components(dcmp_add) %>% 
-  autoplot()+  theme(plot.title = element_text(size=10)) 
+# plot the components
+p_6_add <- components(dcmp_add) %>%
+  autoplot() + theme(plot.title = element_text(size = 10))
 
-#plot ACF of residuals
-p_7_add<- components(dcmp_add)%>%
+# plot ACF of residuals
+p_7_add <- components(dcmp_add) %>%
   ACF(remainder) %>%
-  autoplot() + labs(title="ACF Residuals additive decomposition") +
-  theme(plot.title = element_text(size=10)) 
+  autoplot() + labs(title = "ACF Residuals additive decomposition") +
+  theme(plot.title = element_text(size = 10))
 
-#plot PACF of residuals 
-p_8_add<- components(dcmp_add)%>%
+# plot PACF of residuals
+p_8_add <- components(dcmp_add) %>%
   PACF(remainder) %>%
-  autoplot() + labs(title="PACF Residuals additive decomposition") +
-  theme(plot.title = element_text(size=10)) 
+  autoplot() + labs(title = "PACF Residuals additive decomposition") +
+  theme(plot.title = element_text(size = 10))
 
-(p_5_add|p_6_add)/(p_7_add|p_8_add)
-
+(p_5_add | p_6_add) / (p_7_add | p_8_add)
 ```
 
 ```{r multiplicative SLT decomposting}
@@ -153,31 +159,32 @@ dcmp_multi <- co2_2 %>%
 
 p_5_multi <- components(dcmp_multi) %>%
   as_tsibble() %>%
-  autoplot(log_value, colour="gray") +
-  geom_line(aes(y=trend), colour = "#D55E00") +
-  labs(y = TeX(r'(Log $CO_2$ Annualized Growth Rate)'), 
-       x="Month and Year",
-       title = "Monthly Mean CO2") +
-  theme(plot.title = element_text(size=10)) 
+  autoplot(log_value, colour = "gray") +
+  geom_line(aes(y = trend), colour = "#D55E00") +
+  labs(
+    y = TeX(r'(Log $CO_2$ Annualized Growth Rate)'),
+    x = "Month and Year",
+    title = "Monthly Mean CO2"
+  ) +
+  theme(plot.title = element_text(size = 10))
 
-#plot the components
+# plot the components
 p_6_multi <- components(dcmp_multi) %>%
-  autoplot()+  theme(plot.title = element_text(size=10))
+  autoplot() + theme(plot.title = element_text(size = 10))
 
-#plot ACF of residuals
-p_7_multi<- components(dcmp_multi)%>%
+# plot ACF of residuals
+p_7_multi <- components(dcmp_multi) %>%
   ACF(remainder) %>%
-  autoplot() + labs(title="ACF Residuals multiplicative decomposition") +
-  theme(plot.title = element_text(size=10))
+  autoplot() + labs(title = "ACF Residuals multiplicative decomposition") +
+  theme(plot.title = element_text(size = 10))
 
-#plot PACF of residuals
-p_8_multi<- components(dcmp_multi)%>%
+# plot PACF of residuals
+p_8_multi <- components(dcmp_multi) %>%
   PACF(remainder) %>%
-  autoplot() + labs(title="PACF Residuals multiplicative decomposition") +
-  theme(plot.title = element_text(size=10))
+  autoplot() + labs(title = "PACF Residuals multiplicative decomposition") +
+  theme(plot.title = element_text(size = 10))
 
-(p_5_multi|p_6_multi)/(p_7_multi|p_8_multi)
-
+(p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
 ```
 
 > trend: strong positive linear trend across years
@@ -185,7 +192,7 @@ p_8_multi<- components(dcmp_multi)%>%
 > seasonality: strong seasonality - will explore details in next plot
 
 ```{r}
-boxplot(co2~cycle(co2, xlab="Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
+boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
 ```
 > seasonal: Lowest in October and highest in May 
 > CO2 is highest in May and lowest in October. 
@@ -196,80 +203,78 @@ boxplot(co2~cycle(co2, xlab="Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO
 
 ```{r}
 # Fit a linear time trend model examine the characteristics of the residuals
-mod.lm1 = lm(co2 ~ time(co2))
+mod.lm1 <- lm(co2 ~ time(co2))
 summary(mod.lm1)
-plot(mod.lm1, which=c(1,1))
+plot(mod.lm1, which = c(1, 1))
 ```
 > residuals for linear model forms a curved line, and violates the zero mean expectation.  Variance is not constant and violates the homeskedastity assumption.
 
 ```{r}
 # quadratic time trend model.
-mod.lm2 = lm(co2 ~ time(co2) + I(time(co2)^2))
+mod.lm2 <- lm(co2 ~ time(co2) + I(time(co2)^2))
 summary(mod.lm2)
-plot(mod.lm2, which=c(1,1))
+plot(mod.lm2, which = c(1, 1))
 ```
 > residuals for quadratic model is consistently closer to 0. Quadratic was better captured the trend.
 
 
 ```{r}
-# Discuss whether a logarithmic transformation of the data would be appropriate. 
+# Discuss whether a logarithmic transformation of the data would be appropriate.
 # Refer to LS7
-par(mfrow=c(1,2))
-plot(log(co2), col='blue')
-plot(co2, col='red')
+par(mfrow = c(1, 2))
+plot(log(co2), col = "blue")
+plot(co2, col = "red")
 ```
 > The seasonal variation does not seem to change over time, and the trend does not have major curvature. This data set does not seem to require log transformation.
 > A multiplicative model may be more appropriate if the seasonal effect increases as the trend increase. However, that is not the case for this data.
 
 ```{r}
-# Fit a polynomial time trend model that incorporates seasonal dummy variables, and use this model to generate forecasts to the year 2020. 
+# Fit a polynomial time trend model that incorporates seasonal dummy variables, and use this model to generate forecasts to the year 2020.
 
 
 # function to be AIC and BIC scores
-eval_results = function(models){
-# calculate from models
-aic_results = lapply(models, function(model) AIC(model))
-bic_results = lapply(models, function(model) BIC(model))
-# flatten list
-aic_results = unlist(aic_results, recursive = TRUE, use.names = TRUE)
-bic_results = unlist(bic_results, recursive = TRUE, use.names = TRUE)
-results = data.frame(modelname = names(models), aic=aic_results, bic=bic_results)
-return(results)
+eval_results <- function(models) {
+  # calculate from models
+  aic_results <- lapply(models, function(model) AIC(model))
+  bic_results <- lapply(models, function(model) BIC(model))
+  # flatten list
+  aic_results <- unlist(aic_results, recursive = TRUE, use.names = TRUE)
+  bic_results <- unlist(bic_results, recursive = TRUE, use.names = TRUE)
+  results <- data.frame(modelname = names(models), aic = aic_results, bic = bic_results)
+  return(results)
 }
 
 # fine-tune polynomial model
 # TODO: replace poly_season with dummy season variable - refer to LS7
 # TODO: break up into two plots. Fix tdeg and change sdeg instead of doing all combinations.
-models=list()
-for (tdeg in 1:5){
-  for (sdeg in 1:5){
-    fit <- tslm(co2 ~ poly(trend,tdeg) + poly(season, sdeg))
-    models[[paste(tdeg,sdeg,sep='_')]]=fit
+models <- list()
+for (tdeg in 1:5) {
+  for (sdeg in 1:5) {
+    fit <- tslm(co2 ~ poly(trend, tdeg) + poly(season, sdeg))
+    models[[paste(tdeg, sdeg, sep = "_")]] <- fit
   }
 }
 
-results = eval_results(models)
+results <- eval_results(models)
 # plot AIC/BIC of polynomial models
 results %>%
-    gather(key = "name", value = "value", aic, bic) %>%
-    ggplot(aes(x = modelname, y = value, colour=name, group=name)) +
-    geom_point() +
-    geom_line() +
-    xlab("Number of Parameters") +
-    ylab("AIC/BIC")
+  gather(key = "name", value = "value", aic, bic) %>%
+  ggplot(aes(x = modelname, y = value, colour = name, group = name)) +
+  geom_point() +
+  geom_line() +
+  xlab("Number of Parameters") +
+  ylab("AIC/BIC")
 # based on graph, trend degree = 3 and season degree = 4 looks the best
 ```
 > trend degree = 3 seems best. No significant improvement after that.
 
 
 ```{r} 
-
-mod.poly <- tslm(co2 ~ poly(trend,3) + poly(season,4))
+mod.poly <- tslm(co2 ~ poly(trend, 3) + poly(season, 4))
 summary(mod.poly)
 par(mfrow = c(2, 2))
 plot(mod.poly$residuals)
-plot(forecast::forecast(mod.poly, h=20*12))
-
+plot(forecast::forecast(mod.poly, h = 20 * 12))
 ```
 > polynomial time trend that incorporates a seaosnal dummy variable was able to capture the linear and seasonal trend when forecasted to 2020. There's a slight curve at the 2020 tail of the trend due to the 3rd degree polynomial.
 
@@ -283,8 +288,7 @@ plot(forecast::forecast(mod.poly, h=20*12))
 ```{r, echo=F, message=F}
 # first step, no differencing
 
-co2 %>% ggtsdisplay(main="")
-
+co2 %>% ggtsdisplay(main = "")
 ```
 > time series plot: strong positive correlation
 > ACF: strong positive correlation with slight bumps suggest seasonality, which makes sense based on our EDA. ACF is positive for all the lags, so the series needs further differencing.
@@ -292,7 +296,7 @@ co2 %>% ggtsdisplay(main="")
 
 ```{r}
 # 1st DIFFERENCING
-diff(co2) %>% ggtsdisplay(main="")
+diff(co2) %>% ggtsdisplay(main = "")
 ```
 > The right order of differencing is the minimum differencing required to get a near-stationary series which roams around a defined mean and the ACF plot reaches to zero fairly quick. You need differencing only if the series is non-stationary. Else, no differencing is needed, that is, d=0.
 The origin data are clearly non-stationary, as the series has a strong positive correlation. Consequently, we will take a first difference of the data. The differenced data are shown above. These look stationary, and so we will not consider further differences.
@@ -306,47 +310,45 @@ The origin data are clearly non-stationary, as the series has a strong positive 
 # TODO - check order parameter, and add other necessary parameters
 # TODO - how to manually determine arima parameters? - LS7
 # AUTO ARIMA
-mod.arima = auto.arima(co2)
+mod.arima <- auto.arima(co2)
 summary(mod.arima)
-arima_pred <- forecast::forecast(mod.arima, level=c(95), h=22*12)
+arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
 plot(arima_pred)
 
 # SELF-DETERMINED parameters
-order= c(1,1,2)
-mod.arima = arima(co2, order=order, seasonal=list(order=order,period=NA))
+order <- c(1, 1, 2)
+mod.arima <- arima(co2, order = order, seasonal = list(order = order, period = NA))
 summary(mod.arima)
-arima_pred <- forecast::forecast(mod.arima, level=c(95), h=22*12)
+arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
 plot(arima_pred)
-
 ```
 
 
 ## (3 points) Task 4a: Forecast atmospheric CO2 growth 
 ```{r, echo=F}
-arima_pred <- forecast::forecast(mod.arima, level=c(95), h=110*12)
+arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 110 * 12)
 plot(arima_pred)
-abline(h = 420, col='red')
-abline(h = 500, col='red')
+abline(h = 420, col = "red")
+abline(h = 500, col = "red")
 ```
 
 
 ```{r}
-
 # TODO: double check numbers
-lower = data.frame(arima_pred) %>%
-  filter(Point.Forecast >= 420) %>%
+lower <- data.frame(arima_pred) %>%
+  dplyr::filter(Point.Forecast >= 420) %>%
   head(1)
-upper = data.frame(arima_pred) %>%
-  filter(Point.Forecast <= 500) %>%
+upper <- data.frame(arima_pred) %>%
+  dplyr::filter(Point.Forecast <= 500) %>%
   tail(1)
 
 # TODO: filter by index of dataframe
-level2100 = data.frame(arima_pred) %>%
-  filter(Point.x <= 2100) %>%
+level2100 <- data.frame(arima_pred) %>%
+  dplyr::filter(Point.x <= 2100) %>%
   tail(1)
 
 
-co2_bounds = rbind(lower, upper, level2100)
+co2_bounds <- rbind(lower, upper, level2100)
 co2_bounds
 ```
 
