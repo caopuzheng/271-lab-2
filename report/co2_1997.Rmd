@@ -40,9 +40,7 @@ library(blsR)
 
 
 ## (3 points) Task 0a: Introduction 
-Observed by Charles D. Keeling in 1960, there is a systematic variation with season and latitude in the concentration and isotopic abundance of atmospheric carbon dioxide ($CO_2$). Here, we are interested in the questions: Given the historic atmospheric $CO_2$ level, can we forecast future atmospheric $CO_2$ level? Addressing this question will provide us a better understanding of how $CO_2$ build up over time, giving us opportunity to develop actions to mitigate global warnings. By the end of our analysis, we will have a better understanding of which type of model best describes our data, which may or may not lead to its ability to forecast future $CO_2$ level.
-
-TODO: write more stuff
+If you are concerned about global warming (or question whether this is true), you may have heard about the “Keeling Curve” which is named after the scientist Charles David Kneeling.  Kneeling started measuring and monitoring the accumulation of carbon dioxide ($CO_2$) in the atmosphere in 1958.  Many scientists credit the Keeling curve with first bringing our attention to the current increase of $CO_2$ in the atmosphere. The one key question in people’s minds is whether the CO2 increase trend observed in the past will continue and at what speed, over the next few decades. The answer to this question is critical to our policy makers and environmentalists, as the forecast $CO_2$ results will help them evaluate how concerned they should be and what actions to take to minimize the consequences. We will conduct the study of the $CO_2$ data set to answer this question.  We plan to explore the data set and modeling alternatives to determine whether a reliable forecast model can be developed to forecast through the year of 2022. 
 
 
 
