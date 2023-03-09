@@ -62,7 +62,7 @@ print(end(co2))
 
 There is an upward trend of CO2 level between 1959 and 1997, with relatively constant annual growth rate. The CO2 values are not normally distributed and is right-skewed. 
 
-```{r warning=FALSE, message=FALSE, out.width="65%"}
+```{r warning=FALSE, message=FALSE, fig.align='center', out.width="65%", fig.cap="Atmospheric CO2 Level Time Series Overview"}
 co2_2 <- co2 %>%
   as_tsibble() %>%
   mutate(
@@ -92,10 +92,8 @@ p_4 <- co2_2 %>%
   xlab("Monthly Mean") +
   theme(plot.title = element_text(size = 10))
 # scale_x_continuous(limits = c(0, 16), breaks = seq(1,16,2))
-```
 
 
-```{r additive SLT decomposting, warning=FALSE, message=FALSE, out.width="65%"}
 # Use additive method in STL decomposition
 dcmp_add <- co2_2 %>%
   model(stl = STL(value))
@@ -122,7 +120,7 @@ p_6_add <- components(dcmp_add) %>%
 TODO: Answering the trend and growth rate using first 2 plots and the seasonality and stationary using the second 2 plots (histogram is not Gaussian white noises)
 
 
-```{r}
+```{r fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
 # box plot
 box<-boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
 ```
