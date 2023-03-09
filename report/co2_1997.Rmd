@@ -40,19 +40,25 @@ library(blsR)
 
 
 ## (3 points) Task 0a: Introduction 
-Observed by Charles D. Keeling in 1960, there is a systematic variation with season and latitude in the concentration and isotopic abundance of atmospheric carbon dioxide ($CO_2$). Here, we are interested in two questions. First, what is the overall trend and seasonality of the atmospheric $CO_2$ level? And second, whether or not atmospheric $CO_2$ level can be model effectively thorugh a combination of de-trending, smoothing averages, and ARIMA? Addressing these two issues will provide us a better understanding of $CO_2$ build up over time and to forecast for future effect. 
+Observed by Charles D. Keeling in 1960, there is a systematic variation with season and latitude in the concentration and isotopic abundance of atmospheric carbon dioxide ($CO_2$). Here, we are interested in the questions: Given the historic atmospheric $CO_2$ level, can we forecast future atmospheric $CO_2$ level? Addressing this question will provide us a better understanding of how $CO_2$ build up over time, giving us opportunity to develop actions to mitigate global warnings. By the end of our analysis, we will have a better understanding of which type of model best describes our data, which may or may not lead to its ability to forecast future $CO_2$ level.
+
+TODO: write more stuff
+
+
 
 ## (3 points) Task 1a: CO2 data
 
 > Describe of how, where and why the data is generated
 
 ```{r}
+?co2
 # basic information about the data
 print(sum(is.na(co2)))
 print(start(co2))
 print(end(co2))
 ```
-> The data starts from 1959 Jan and ends in 1997 Dec, with a total 468 monthly observations. There are no missing values.
+> This data come from Mauna Loa Atmospheric CO2 Concentration and is use to measure atmospheric concentrations of CO_2 over time. The data starts from 1959 Jan and ends in 1997 Dec, with a total 468 monthly observations. 
+
 
 > QUESTION: Task 1b asked "Gather the most recent weekly data from this page.".  Should we not use weekly data here?
 
@@ -72,13 +78,22 @@ p_1 <- tsibble::as_tsibble(co2) %>%
   theme(plot.title = element_text(size = 10))
 
 # add the annualized growth rate and log value
+# co2_2 <- co2 %>%
+#   as_tsibble() %>%
+#   mutate(
+#     Diff_growth = value - lag(value), # Difference in route between years
+#     annual_growth = (Diff_growth * 12) / lag(value) * 100,
+#     log_value = log(value)
+#   )
+
 co2_2 <- co2 %>%
   as_tsibble() %>%
   mutate(
-    Diff_growth = value - lag(value), # Difference in route between years
-    annual_growth = (Diff_growth * 12) / lag(value) * 100,
+    Diff_growth = value - lag(value, n=12), # Difference in route between years
+    annual_growth = Diff_growth / lag(value, n=12) * 100,
     log_value = log(value)
   )
+
 # plot the log value
 p_2 <- co2_2 %>%
   ggplot() +
@@ -114,7 +129,7 @@ p_4 <- co2_2 %>%
   theme(plot.title = element_text(size = 10))
 # scale_x_continuous(limits = c(0, 16), breaks = seq(1,16,2))
 
-(p_1 | p_2) / (p_3 | p_4)
+#(p_1 | p_2) / (p_3 | p_4)
 ```
 
 
@@ -150,8 +165,22 @@ p_8_add <- components(dcmp_add) %>%
   autoplot() + labs(title = "PACF Residuals additive decomposition") +
   theme(plot.title = element_text(size = 10))
 
-(p_5_add | p_6_add) / (p_7_add | p_8_add)
+
+(p_5_add | p_3) / (p_4 | p_6_add) #/ (p_7_add | p_8_add)
 ```
+
+TODO: Answering the trend and growth rate using first 2 plots and the seasonality and stationary using the second 2 plots (histogram is not Gaussian white noises)
+
+
+```{r}
+# TODO: GGBOX THIS
+box<-boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
+```
+> seasonal: Lowest in October and highest in May 
+> CO2 is highest in May and lowest in October. 
+> May is warmer, people are more active outside and travel more, which can generate more carbon emissions.
+
+
 
 ```{r multiplicative SLT decomposting}
 dcmp_multi <- co2_2 %>%
@@ -168,7 +197,7 @@ p_5_multi <- components(dcmp_multi) %>%
   ) +
   theme(plot.title = element_text(size = 10))
 
-# plot the components
+# plot the componentsco
 p_6_multi <- components(dcmp_multi) %>%
   autoplot() + theme(plot.title = element_text(size = 10))
 
@@ -184,22 +213,16 @@ p_8_multi <- components(dcmp_multi) %>%
   autoplot() + labs(title = "PACF Residuals multiplicative decomposition") +
   theme(plot.title = element_text(size = 10))
 
-(p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
+#(p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
 ```
 
 > trend: strong positive linear trend across years
 > irregular elements: The data oscilate around 0. From the ACF plot, residuals have strong autocorrelation terms, indicating trend and seasonal variation. The PACF plot ocilates with many significant lags
 > seasonality: strong seasonality - will explore details in next plot
 
-```{r}
-boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
-```
-> seasonal: Lowest in October and highest in May 
-> CO2 is highest in May and lowest in October. 
-> May is warmer, people are more active outside and travel more, which can generate more carbon emissions.
-
 
 ## (3 points) Task 2a: Linear time trend model
+
 
 ```{r}
 # Fit a linear time trend model examine the characteristics of the residuals
@@ -207,7 +230,9 @@ mod.lm1 <- lm(co2 ~ time(co2))
 summary(mod.lm1)
 plot(mod.lm1, which = c(1, 1))
 ```
-> residuals for linear model forms a curved line, and violates the zero mean expectation.  Variance is not constant and violates the homeskedastity assumption.
+
+> residuals for linear model forms a curved line, and violates the zero mean expectation. Variance is not constant and violates the homeskedastity assumption.
+
 
 ```{r}
 # quadratic time trend model.
@@ -225,12 +250,14 @@ par(mfrow = c(1, 2))
 plot(log(co2), col = "blue")
 plot(co2, col = "red")
 ```
+TODO: Since our data increases gradually overtime, as seen by the histogram, applying the log transformation could not contribute much to the model.
+
 > The seasonal variation does not seem to change over time, and the trend does not have major curvature. This data set does not seem to require log transformation.
 > A multiplicative model may be more appropriate if the seasonal effect increases as the trend increase. However, that is not the case for this data.
 
+
 ```{r}
 # Fit a polynomial time trend model that incorporates seasonal dummy variables, and use this model to generate forecasts to the year 2020.
-
 
 # function to be AIC and BIC scores
 eval_results <- function(models) {
@@ -249,10 +276,10 @@ eval_results <- function(models) {
 # TODO: break up into two plots. Fix tdeg and change sdeg instead of doing all combinations.
 models <- list()
 for (tdeg in 1:5) {
-  for (sdeg in 1:5) {
-    fit <- tslm(co2 ~ poly(trend, tdeg) + poly(season, sdeg))
-    models[[paste(tdeg, sdeg, sep = "_")]] <- fit
-  }
+  # for (sdeg in 1:5) {
+    fit <- tslm(co2 ~ poly(trend, tdeg) + season)
+    models[[paste(tdeg, sep = "_")]] <- fit
+  # }
 }
 
 results <- eval_results(models)
@@ -270,11 +297,13 @@ results %>%
 
 
 ```{r} 
-mod.poly <- tslm(co2 ~ poly(trend, 3) + poly(season, 4))
+mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
 summary(mod.poly)
 par(mfrow = c(2, 2))
 plot(mod.poly$residuals)
 plot(forecast::forecast(mod.poly, h = 20 * 12))
+
+# TODO add residuals diagnosis plot
 ```
 > polynomial time trend that incorporates a seaosnal dummy variable was able to capture the linear and seasonal trend when forecasted to 2020. There's a slight curve at the 2020 tail of the trend due to the 3rd degree polynomial.
 
