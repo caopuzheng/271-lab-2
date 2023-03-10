@@ -3,6 +3,7 @@
 .Rapp.history
 *.Rproj
 .DS_Store
+*.log
 
 # Session Data files
 .RData
