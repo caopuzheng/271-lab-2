@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021) (preloaded format=pdflatex 2023.3.10)  10 MAR 2023 02:45
+This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021) (preloaded format=pdflatex 2023.3.11)  11 MAR 2023 01:15
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -518,154 +518,152 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 \tf@toc=\write5
 \openout5 = `co2_1997.toc'.
 
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-37.
-(/usr/local/texlive/texmf-dist/tex/latex/lm/t1lmtt.fd
-File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [1
-
-{/opt/texlive/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<co2_1997_files/figure-latex/CO2-ETSDA-1.pdf, id=52, 455.7025pt x 305.14pt>
+<co2_1997_files/figure-latex/CO2-ETSDA-1.pdf, id=30, 455.7025pt x 305.14pt>
 File: co2_1997_files/figure-latex/CO2-ETSDA-1.pdf Graphic file (type pdf)
 <use co2_1997_files/figure-latex/CO2-ETSDA-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/CO2-ETSDA-1.pdf  used on i
-nput line 157.
+nput line 145.
 (pdftex.def)             Requested size: 305.3469pt x 204.46135pt.
-<co2_1997_files/figure-latex/boxplot-1.pdf, id=53, 449.68pt x 251.94125pt>
+<co2_1997_files/figure-latex/boxplot-1.pdf, id=31, 449.68pt x 251.94125pt>
 File: co2_1997_files/figure-latex/boxplot-1.pdf Graphic file (type pdf)
 <use co2_1997_files/figure-latex/boxplot-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/boxplot-1.pdf  used on inp
-ut line 166.
+ut line 154.
 (pdftex.def)             Requested size: 305.35294pt x 171.07942pt.
-<co2_1997_files/figure-latex/logarithmic-transformation-1.pdf, id=55, 436.63126
+[1
+
+{/opt/texlive/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2 <./co2_1997_fil
+es/figure-latex/CO2-ETSDA-1.pdf> <./co2_1997_files/figure-latex/boxplot-1.pdf>]
+<co2_1997_files/figure-latex/logarithmic-transformation-1.pdf, id=67, 436.63126
 pt x 248.93pt>
 File: co2_1997_files/figure-latex/logarithmic-transformation-1.pdf Graphic file
  (type pdf)
 <use co2_1997_files/figure-latex/logarithmic-transformation-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/logarithmic-transformation
--1.pdf  used on input line 177.
+-1.pdf  used on input line 165.
 (pdftex.def)             Requested size: 305.33998pt x 174.07887pt.
-[2 <./co2_1997_files/figure-latex/CO2-ETSDA-1.pdf> <./co2_1997_files/figure-lat
-ex/boxplot-1.pdf>]
-<co2_1997_files/figure-latex/linear-effect-model-1.pdf, id=80, 436.63126pt x 28
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
+78.
+(/usr/local/texlive/texmf-dist/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+<co2_1997_files/figure-latex/linear-effect-model-1.pdf, id=70, 436.63126pt x 28
 2.05376pt>
 File: co2_1997_files/figure-latex/linear-effect-model-1.pdf Graphic file (type 
 pdf)
 <use co2_1997_files/figure-latex/linear-effect-model-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/linear-effect-model-1.pdf 
- used on input line 199.
+ used on input line 187.
 (pdftex.def)             Requested size: 305.33998pt x 197.2426pt.
-<co2_1997_files/figure-latex/quadratic-effect-model-1.pdf, id=81, 436.63126pt x
+[3 <./co2_1997_files/figure-latex/logarithmic-transformation-1.pdf> <./co2_1997
+_files/figure-latex/linear-effect-model-1.pdf>]
+<co2_1997_files/figure-latex/quadratic-effect-model-1.pdf, id=96, 436.63126pt x
  282.05376pt>
 File: co2_1997_files/figure-latex/quadratic-effect-model-1.pdf Graphic file (ty
 pe pdf)
 <use co2_1997_files/figure-latex/quadratic-effect-model-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/quadratic-effect-model-1.p
-df  used on input line 216.
+df  used on input line 204.
 (pdftex.def)             Requested size: 305.33998pt x 197.2426pt.
-[3 <./co2_1997_files/figure-latex/logarithmic-transformation-1.pdf> <./co2_1997
-_files/figure-latex/linear-effect-model-1.pdf>] [4 <./co2_1997_files/figure-lat
-ex/quadratic-effect-model-1.pdf>]
-<co2_1997_files/figure-latex/polynomial-trend-seasonality-1.pdf, id=120, 453.69
+[4 <./co2_1997_files/figure-latex/quadratic-effect-model-1.pdf>]
+<co2_1997_files/figure-latex/polynomial-trend-seasonality-1.pdf, id=114, 453.69
 5pt x 316.18124pt>
 File: co2_1997_files/figure-latex/polynomial-trend-seasonality-1.pdf Graphic fi
 le (type pdf)
 <use co2_1997_files/figure-latex/polynomial-trend-seasonality-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/polynomial-trend-seasonali
-ty-1.pdf  used on input line 259.
+ty-1.pdf  used on input line 247.
 (pdftex.def)             Requested size: 305.33786pt x 212.79076pt.
-<co2_1997_files/figure-latex/polynomial-diagnostic-forecast-1.pdf, id=122, 466.
+<co2_1997_files/figure-latex/polynomial-diagnostic-forecast-1.pdf, id=116, 466.
 74374pt x 127.47626pt>
 File: co2_1997_files/figure-latex/polynomial-diagnostic-forecast-1.pdf Graphic 
 file (type pdf)
 <use co2_1997_files/figure-latex/polynomial-diagnostic-forecast-1.pdf>
 Package pdftex.def Info: co2_1997_files/figure-latex/polynomial-diagnostic-fore
-cast-1.pdf  used on input line 299.
+cast-1.pdf  used on input line 287.
 (pdftex.def)             Requested size: 328.84073pt x 89.81241pt.
 [5 <./co2_1997_files/figure-latex/polynomial-trend-seasonality-1.pdf> <./co2_19
 97_files/figure-latex/polynomial-diagnostic-forecast-1.pdf>]
-<co2_1997_files/figure-latex/unnamed-chunk-1-1.pdf, id=146, 459.7175pt x 297.11
-pt>
-File: co2_1997_files/figure-latex/unnamed-chunk-1-1.pdf Graphic file (type pdf)
 
-<use co2_1997_files/figure-latex/unnamed-chunk-1-1.pdf>
-Package pdftex.def Info: co2_1997_files/figure-latex/unnamed-chunk-1-1.pdf  use
-d on input line 317.
-(pdftex.def)             Requested size: 459.73741pt x 297.12286pt.
-[6]
-<co2_1997_files/figure-latex/unnamed-chunk-2-1.pdf, id=154, 459.7175pt x 297.11
-pt>
-File: co2_1997_files/figure-latex/unnamed-chunk-2-1.pdf Graphic file (type pdf)
+LaTeX Warning: Reference `fig:co2-ts-analysis' on page 6 undefined on input lin
+e 303.
 
-<use co2_1997_files/figure-latex/unnamed-chunk-2-1.pdf>
-Package pdftex.def Info: co2_1997_files/figure-latex/unnamed-chunk-2-1.pdf  use
-d on input line 330.
-(pdftex.def)             Requested size: 459.73741pt x 297.12286pt.
-[7 <./co2_1997_files/figure-latex/unnamed-chunk-1-1.pdf>]
-LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 
-369.
-(/usr/local/texlive/texmf-dist/tex/latex/lm/ts1lmtt.fd
-File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [8 <./co2_1997_files/figure-latex/unnamed-chunk-2-1.pdf>]
-<co2_1997_files/figure-latex/unnamed-chunk-3-1.pdf, id=179, 463.7325pt x 315.17
+<co2_1997_files/figure-latex/ts-analysis-1.pdf, id=141, 459.7175pt x 297.11pt>
+File: co2_1997_files/figure-latex/ts-analysis-1.pdf Graphic file (type pdf)
+<use co2_1997_files/figure-latex/ts-analysis-1.pdf>
+Package pdftex.def Info: co2_1997_files/figure-latex/ts-analysis-1.pdf  used on
+ input line 307.
+(pdftex.def)             Requested size: 305.35054pt x 197.34445pt.
+<co2_1997_files/figure-latex/first-order-diff-1.pdf, id=142, 459.7175pt x 297.1
+1pt>
+File: co2_1997_files/figure-latex/first-order-diff-1.pdf Graphic file (type pdf
+)
+<use co2_1997_files/figure-latex/first-order-diff-1.pdf>
+Package pdftex.def Info: co2_1997_files/figure-latex/first-order-diff-1.pdf  us
+ed on input line 316.
+(pdftex.def)             Requested size: 305.35054pt x 197.34445pt.
+[6 <./co2_1997_files/figure-latex/ts-analysis-1.pdf>]
+<co2_1997_files/figure-latex/arima-model-residuals-1.pdf, id=159, 463.7325pt x 
+315.1775pt>
+File: co2_1997_files/figure-latex/arima-model-residuals-1.pdf Graphic file (typ
+e pdf)
+<use co2_1997_files/figure-latex/arima-model-residuals-1.pdf>
+Package pdftex.def Info: co2_1997_files/figure-latex/arima-model-residuals-1.pd
+f  used on input line 363.
+(pdftex.def)             Requested size: 305.34264pt x 207.52725pt.
+[7 <./co2_1997_files/figure-latex/first-order-diff-1.pdf>]
+<co2_1997_files/figure-latex/ARIMA-forecast-1.pdf, id=175, 407.5225pt x 253.948
 75pt>
-File: co2_1997_files/figure-latex/unnamed-chunk-3-1.pdf Graphic file (type pdf)
+File: co2_1997_files/figure-latex/ARIMA-forecast-1.pdf Graphic file (type pdf)
+<use co2_1997_files/figure-latex/ARIMA-forecast-1.pdf>
+Package pdftex.def Info: co2_1997_files/figure-latex/ARIMA-forecast-1.pdf  used
+ on input line 391.
+(pdftex.def)             Requested size: 305.34886pt x 190.27896pt.
+<co2_1997_files/figure-latex/ARIMA-distant-future-forecast-1.pdf, id=176, 407.5
+225pt x 253.94875pt>
+File: co2_1997_files/figure-latex/ARIMA-distant-future-forecast-1.pdf Graphic f
+ile (type pdf)
+<use co2_1997_files/figure-latex/ARIMA-distant-future-forecast-1.pdf>
+Package pdftex.def Info: co2_1997_files/figure-latex/ARIMA-distant-future-forec
+ast-1.pdf  used on input line 403.
+(pdftex.def)             Requested size: 305.34886pt x 190.27896pt.
+[8 <./co2_1997_files/figure-latex/arima-model-residuals-1.pdf>] [9 <./co2_1997_
+files/figure-latex/ARIMA-forecast-1.pdf> <./co2_1997_files/figure-latex/ARIMA-d
+istant-future-forecast-1.pdf>] (./co2_1997.aux)
 
-<use co2_1997_files/figure-latex/unnamed-chunk-3-1.pdf>
-Package pdftex.def Info: co2_1997_files/figure-latex/unnamed-chunk-3-1.pdf  use
-d on input line 402.
-(pdftex.def)             Requested size: 463.73842pt x 315.18153pt.
-[9 <./co2_1997_files/figure-latex/unnamed-chunk-3-1.pdf>]
-<co2_1997_files/figure-latex/unnamed-chunk-3-2.pdf, id=192, 407.5225pt x 253.94
-875pt>
-File: co2_1997_files/figure-latex/unnamed-chunk-3-2.pdf Graphic file (type pdf)
+LaTeX Warning: There were undefined references.
 
-<use co2_1997_files/figure-latex/unnamed-chunk-3-2.pdf>
-Package pdftex.def Info: co2_1997_files/figure-latex/unnamed-chunk-3-2.pdf  use
-d on input line 421.
-(pdftex.def)             Requested size: 407.53394pt x 253.95586pt.
-<co2_1997_files/figure-latex/unnamed-chunk-4-1.pdf, id=193, 407.5225pt x 253.94
-875pt>
-File: co2_1997_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (type pdf)
-
-<use co2_1997_files/figure-latex/unnamed-chunk-4-1.pdf>
-Package pdftex.def Info: co2_1997_files/figure-latex/unnamed-chunk-4-1.pdf  use
-d on input line 443.
-(pdftex.def)             Requested size: 407.53394pt x 253.95586pt.
-[10 <./co2_1997_files/figure-latex/unnamed-chunk-3-2.pdf>] [11 <./co2_1997_file
-s/figure-latex/unnamed-chunk-4-1.pdf>] [12] (./co2_1997.aux)
 
 LaTeX Warning: There were multiply-defined labels.
 
 Package rerunfilecheck Info: File `co2_1997.out' has not changed.
-(rerunfilecheck)             Checksum: AC6E0B1AC5344BEFCE92C7C176A7D557;1608.
+(rerunfilecheck)             Checksum: F2FE39494B227D57786C6D7EBB848EC1;1350.
  ) 
 Here is how much of TeX's memory you used:
- 12151 strings out of 480236
- 190233 string characters out of 5895861
- 484059 words of memory out of 5000000
- 29852 multiletter control sequences out of 15000+600000
- 519750 words of font info for 70 fonts, out of 8000000 for 9000
+ 12127 strings out of 480236
+ 190314 string characters out of 5895861
+ 485336 words of memory out of 5000000
+ 29832 multiletter control sequences out of 15000+600000
+ 519445 words of font info for 69 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 60i,10n,63p,1077b,468s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/local/texl
-ive/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/texmf-dist/font
-s/enc/dvips/lm/lm-mathsy.enc}{/usr/local/texlive/texmf-dist/fonts/enc/dvips/lm/
-lm-rm.enc}{/usr/local/texlive/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}</usr
-/local/texlive/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/
-texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/texmf-dist/font
-s/type1/public/lm/lmmi10.pfb></usr/local/texlive/texmf-dist/fonts/type1/public/
-lm/lmr10.pfb></usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmr12.pfb></u
-sr/local/texlive/texmf-dist/fonts/type1/public/lm/lmr17.pfb></usr/local/texlive
-/texmf-dist/fonts/type1/public/lm/lmr7.pfb></usr/local/texlive/texmf-dist/fonts
-/type1/public/lm/lmri10.pfb></usr/local/texlive/texmf-dist/fonts/type1/public/l
-m/lmsy10.pfb></usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmsy7.pfb></u
-sr/local/texlive/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texliv
-e/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
-Output written on co2_1997.pdf (12 pages, 530800 bytes).
+ 60i,10n,63p,1077b,472s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texli
+ve/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/local/texlive/texmf-dist/f
+onts/enc/dvips/lm/lm-rm.enc}{/usr/local/texlive/texmf-dist/fonts/enc/dvips/lm/l
+m-mathit.enc}</usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></
+usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texli
+ve/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/texmf-dist/f
+onts/type1/public/lm/lmr10.pfb></usr/local/texlive/texmf-dist/fonts/type1/publi
+c/lm/lmr12.pfb></usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmr17.pfb><
+/usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmr7.pfb></usr/local/texliv
+e/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/texmf-dist/fo
+nts/type1/public/lm/lmsy10.pfb></usr/local/texlive/texmf-dist/fonts/type1/publi
+c/lm/lmsy7.pfb></usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmtt10.pfb>
+</usr/local/texlive/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
+Output written on co2_1997.pdf (9 pages, 515040 bytes).
 PDF statistics:
- 293 PDF objects out of 1000 (max. 8388607)
- 214 compressed objects within 3 object streams
+ 279 PDF objects out of 1000 (max. 8388607)
+ 204 compressed objects within 3 object streams
  35 named destinations out of 1000 (max. 500000)
- 109 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 101 words of extra memory for PDF output out of 10000 (max. 10000000)
 

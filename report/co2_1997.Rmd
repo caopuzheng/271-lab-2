@@ -48,9 +48,9 @@ The CO2 data was measured continuously at the Mauna Loa Observatory in Hawaii fr
 
 ```{r basic information, echo = FALSE, message = FALSE, warming = FALSE}
 # basic information about the data
-print(sum(is.na(co2)))
-print(start(co2))
-print(end(co2))
+# print(sum(is.na(co2)))
+# print(start(co2))
+# print(end(co2))
 ```
 
 This data set is a time series data that tracks $CO_2$ level (measured in part per million by volume (ppmv)) on a monthly frequency.There are a total of 468 monthly observations from January 1958 to December 1997 with no missing data.
@@ -208,6 +208,7 @@ It is noted that in our selection process we uses a range of 1 to 5 polynomial d
 
 ```{r polynomial-model-stargazer, echo=FALSE, results = "asis",  message = FALSE, echo=FALSE, warning=FALSE}
 mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
+
 stargazer(summary(mod.poly)$coefficients,  header=FALSE,
   type = "latex", omit.stat = c("f", "ser"),
   report = ("vc*p"),
@@ -230,35 +231,33 @@ Using fitted polynomial model to forecast the $CO_2$ level through 2020 (Figure 
 
 ## (3 points) Task 3a: ARIMA times series model
 
-> For the ARIMA model, we can conjecture the following parameters: p: the number of lag observations in the model, also known as the lag order. Inspect PACF plot. d: the number of times the raw observations are differenced; also known as the degree of differencing. q: the size of the moving average window, also known as the order of the moving average. ACF tells how many MA terms are required to remove any autocorrelation in the stationarized series.
+For the ARIMA model, we can conjecture the following parameters: p: the number of lag observations in the model, also known as the lag order. d: the number of times the raw observations are differenced; also known as the degree of differencing. q: the size of the moving average window, also known as the order of the moving average. Typically for ARIMA, PACF plot dictates the lag order while ACF dictates how many MA terms are required to remove any autocorrelation in the stationary series.
 
-```{r, echo=F, message=F}
+As shown in Figure \@ref(fig:co2-ts-analysis), the time series plot has a strong positive trend and is therefore non-stationary. The ACF plot has significant lags that persist with gradual decay and slight bumps due to seasonality. Applying differencing will remove this trend.
+
+```{r ts-analysis, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="CO2 Level ACF and PACF plots"}
 # first step, no differencing
-
 co2 %>% ggtsdisplay(main = "")
 ```
 
-> The time series plot has a strong positive trend and is therefore non-stationary. The ACF plot has significant lags that persist with gradual decay and slight bumps due to seasonality. Applying differencing will remove this trend.
 
-```{r}
+```{r first-order-diff, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="CO2 Level 1st order differencing ACF and PACF plots"}
 # 1st DIFFERENCING
 diff(co2) %>% ggtsdisplay(main = "")
-
+```
+```{r adf-test, warning = FALSE}
 adf.test(diff(co2))
 ```
+Figure \@ref(fig:first-order-diff) shows that, after taking a first difference of the data, the time series plot appears to oscillate around 0. To ensure the it is stationary, we applied the Augmented Dickey-Fuller test, which returns a significant p-value less than 0.05. Thus, we have sufficient evidence to reject the null hypothesis and that the time series is stationary. the ACF has cyclic lags that are significant due to seasonality, but there are no signs of dampening. The PACF plot has 3 to 11 leading significant lags until the autocorrelation dampen.
 
-> After taking a first difference of the data, the time series plot appears to oscillate around 0 and the Augmented Dickey-Fuller test returns a significant p-value which confirms that the time series is stationary. the ACF has cyclic lags that are significant due to seasonality, but there are no signs of dampening. The PACF plot has 3 to 11 leading significant lags until the autocorrelation dampen.
->
-> # NOT SURE IF THIS AR LOGIC IS CORRECT.
->
-> Because the ACF has persistent significant lags while the PACF has dampening oscillations, the data leans towards an AR(3) process. With the differencing component, the ARIMA(p,1,q) model will be the most appropriate. The correct MA and AR parameters will be tested.
->
-> BIC will be the model selection criteria because BIC has a larger penalty for models with more parameters and therefore selects sparser models with fewer parameters compared to AIC and AICc.
+Because the ACF has persistent significant lags while the PACF has dampening oscillations, the data leans towards an AR(3) process. With the differencing component, the ARIMA(p,1,q) model will be the most appropriate. The correct MA and AR parameters will be tested. To select the best model for CO2 level, the BIC information criterion is used because BIC has a larger penalty for models with more parameters and therefore selects sparser models with fewer parameters compared to AIC and AICc.
 
-```{r}
+```{r model-fitting, echo = FALSE, warning = FALSE}
 # TODO - check order parameter, and add other necessary parameters
 # TODO - how to manually determine arima parameters? - LS7
 # AUTO ARIMA
+# TODO: figure out how to do stargazer
+
 mod.arima <- auto.arima(co2, 
                         d=1,
                         ic = 'bic',
@@ -266,12 +265,6 @@ mod.arima <- auto.arima(co2,
                         seasonal=TRUE)
 
 summary(mod.arima)
-
-checkresiduals(mod.arima)
-
-arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
-plot(arima_pred)
-
 # SELF-DETERMINED parameters
 # order <- c(1, 1, 2)
 # mod.arima <- arima(co2, order = order, seasonal = list(order = order, period = NA))
@@ -279,19 +272,29 @@ plot(arima_pred)
 # arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
 # plot(arima_pred)
 ```
+```{r arima-model-residuals, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width="65%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 Level residuals"}
+checkresiduals(mod.arima)
+```
 
-> The final model is ARIMA(1,1,1)(1,1,2) with a BIC of 205.5. Checking the residuals of the model, the residuals plot oscillates around 0, the ACF autocorrelations are all below or only slighly over the threshold value, and the distribution is Gaussian. The Ljung-Box test returns a large p-value and therefore the residuals are stationary.
->
-> Using this model, a forecast of CO2 concentrations to the year 2020 was generated. After 2010, the forecast starts to curve with a wider confidence interval.
+The final model is estimated to be ARIMA(1,1,1)(1,1,2) with a BIC of 205.5. Checking the residuals of the model in Figure \@ref(fig:arima-model-residuals), the residuals plot oscillates around 0, the ACF autocorrelations are all below or only slightly over the threshold value, and the distribution is Gaussian. The Ljung-Box test returns a large p-value of 0.3406, suggesting that and there are sufficient evidences to reject the null hypothesis and therefore, the residuals are stationary. Since the model residuals are stationary, we decided to perform a forecast on atmospheric CO2 level to 2022 (Figure \@ref(fig:ARIMA-forecast)). Noted that in the figure after 2010, the forecast starts to curve with a wider confidence interval.
+
+```{r ARIMA-forecast, message=FALSE, warning=FALSE ,fig.align='center', out.width="65%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 level 2022 forecast"}
+arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
+plot(arima_pred)
+```
+
 
 ## (3 points) Task 4a: Forecast atmospheric CO2 growth
 
-```{r, echo=F}
+
+```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE ,fig.align='center', out.width="65%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 Level distant future forecast"}
 arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 110 * 12)
 plot(arima_pred)
 abline(h = 420, col = "red")
 abline(h = 500, col = "red")
+```
 
+```{r arima-forecast-ci, echo=FALSE, message=FALSE, warning=FALSE}
 lower <- data.frame(arima_pred) %>%
   dplyr::filter(Point.Forecast >= 420) %>%
   head(1)
@@ -302,8 +305,7 @@ level2100 <- data.frame(arima_pred)['Jan 2100',]
 co2_bounds <- rbind(lower, upper, level2100)
 co2_bounds
 ```
-
-> Based on the model forecasts, CO2 concentrations is expected to reach 420 ppm by May 2031 and 500 ppm by Oct 2086. By Jan 2100, CO2 levels will be at 523.5 ppm. We are not confident about these predictions because the lower bound of the confidence interval has plateaued at approximately 390 ppm while the upper bound continues to grow higher.
+To demonstrate future accumulated atmospheric $CO_2$ level, we ran a forecast to see when $CO_2$ level will hit certain target. Based on the model forecasts, the atmospheric $CO_2$ level is expected to reach 420 ppm by May 2031 and 500 ppm by Oct 2086. By Jan 2100, CO2 levels will be at 523.5 ppm. We are not confident about these predictions because the lower bound of the confidence interval has plateaued at approximately 390 ppm while the upper bound continues to grow higher. While the model results has a wide confidence interval, the actual level accumulation could dramatically exceed the forecast level. Since $CO_2$ is a green house gas, any measures one could take now could prevent drastic damage in the future.
 
 ```{r extra plots, echo = FALSE, message = FALSE}
 p_1 <- tsibble::as_tsibble(co2) %>%
@@ -355,7 +357,7 @@ p_8_add <- components(dcmp_add) %>%
 
 ```
 
-```{r multiplicative SLT decomposting}
+```{r multiplicative SLT decomposting, echo = FALSE, message = FALSE}
 dcmp_multi <- co2_2 %>%
   model(stl = STL(log_value))
 
@@ -387,6 +389,7 @@ p_8_multi <- components(dcmp_multi) %>%
   theme(plot.title = element_text(size = 10))
 
 #(p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
+# > trend: strong positive linear trend across years irregular elements: The data oscilate around 0. From the ACF plot, residuals have strong autocorrelation terms, indicating trend and seasonal variation. The PACF plot ocilates with many significant lags seasonality: strong seasonality - will explore details in next plot
 ```
 
-> trend: strong positive linear trend across years irregular elements: The data oscilate around 0. From the ACF plot, residuals have strong autocorrelation terms, indicating trend and seasonal variation. The PACF plot ocilates with many significant lags seasonality: strong seasonality - will explore details in next plot
+
