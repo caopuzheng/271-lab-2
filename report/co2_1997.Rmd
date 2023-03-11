@@ -64,8 +64,8 @@ Furthermore, from the  $CO_2$ Decomposition graph, we observed trend, season and
 co2_2 <- co2 %>%
   as_tsibble() %>%
   mutate(
-    Diff_growth = value - lag(value, n = 12), # Difference in route between years
-    annual_growth = Diff_growth / lag(value, n = 12) * 100,
+    Diff_growth = value - lag(value, n=12), # Difference in route between years
+    annual_growth = Diff_growth / lag(value, n=12) * 100,
     log_value = log(value)
   )
 
@@ -118,7 +118,7 @@ p_6_add <- components(dcmp_add) %>%
 
 ```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
 # box plot
-box <- boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
+box<-boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
 ```
 
 The boxplot in Figure \@ref(fig:boxplot) further validated the seasonal pattern in the Decomposition graph.  We observed April-June being the peak season for $CO_2$, which aligns with more outdoor activities in the spring season. September-October are the low points of the year. The difference between the high and low averages is 5.5 ppmv.  (max(box$stats[3,])- min(box$stats[3,])
@@ -133,9 +133,7 @@ plot(co2, col = "red")
 
 ## (3 points) Task 2a: Linear time trend model
 
-As discussed in the Data section above, the $CO_2$ time series data set follows closely to a linear trend line, so we will first explore a linear regression model for the data set. 
-
-Given both the original data series and its annual growth rate are range-bound with no clear sign of exponential growth and increased variance with time, we don`t think it is necessary to perform a logarithmic transformation. This is supported by both Figure \@ref(fig:CO2-ETSDA) and Figure \@ref(fig:logarithmic-transformation). In these plots, the series variance does not seem to change over time, and the trend does not have major curvature. Thus a logarithmic transformation is not needed for this data set.
+As discussed in the Data section above, the $CO_2$ time series data set follows closely to a linear trend line, so we will first explore a linear regression model for the data set.  Given the annual growth rate has been range-bound (no clear sign of exponential growth) and there are extreme small or large values, we don’t think it is necessary to perform a logarithmic transformation of the data. A log transformation may be more appropriate if the $CO_2$ level grows exponentially, which was not the case outline in both Figure \@ref(fig:CO2-ETSDA) and Figure \@ref(fig:logarithmic-transformation). In these plots, the seasonal variation does not seem to change over time, and the trend does not have major curvature. Thus a logarithmic transformation is not needed for this data set.
 
 ```{r linear-effect-model, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Linear Time Effect Model Residuals"}
 # Fit a linear time trend model examine the characteristics of the residuals
@@ -150,8 +148,7 @@ plot(mod.lm2, which = c(1, 1))
 ```
 
 ```{r linear-model-stargazer, echo=FALSE, results = "asis",  message = FALSE, echo=FALSE, warning=FALSE}
-stargazer(mod.lm1, mod.lm2,
-  header = FALSE,
+stargazer(mod.lm1, mod.lm2,  header=FALSE,
   type = "latex", omit.stat = c("f", "ser"),
   covariate.labels = c("linear time", "quadratic time", "(Intercept)"),
   report = ("vc*p"),
@@ -188,8 +185,8 @@ eval_results <- function(models) {
 models <- list()
 for (tdeg in 1:5) {
   # for (sdeg in 1:5) {
-  fit <- tslm(co2 ~ poly(trend, tdeg) + season)
-  models[[paste(tdeg, sep = "_")]] <- fit
+    fit <- tslm(co2 ~ poly(trend, tdeg) + season)
+    models[[paste(tdeg, sep = "_")]] <- fit
   # }
 }
 
@@ -211,13 +208,8 @@ It is noted that in our selection process we uses a range of 1 to 5 polynomial d
 
 ```{r polynomial-model-stargazer, echo=FALSE, results = "asis",  message = FALSE, echo=FALSE, warning=FALSE}
 mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
-<<<<<<< HEAD
 
 stargazer(summary(mod.poly)$coefficients,  header=FALSE,
-=======
-stargazer(summary(mod.poly)$coefficients,
-  header = FALSE,
->>>>>>> 9eda7bdfd240fc23fe3d7149d4cdaeacb4e19e80
   type = "latex", omit.stat = c("f", "ser"),
   report = ("vc*p"),
   star.cutoffs = c(0.05, 0.01, 0.001),
@@ -264,7 +256,6 @@ Because the ACF has persistent significant lags while the PACF has dampening osc
 # TODO - check order parameter, and add other necessary parameters
 # TODO - how to manually determine arima parameters? - LS7
 # AUTO ARIMA
-<<<<<<< HEAD
 # TODO: figure out how to do stargazer
 
 mod.arima <- auto.arima(co2, 
@@ -272,14 +263,6 @@ mod.arima <- auto.arima(co2,
                         ic = 'bic',
                         trace=FALSE,
                         seasonal=TRUE)
-=======
-mod.arima <- auto.arima(co2,
-  d = 1,
-  ic = "bic",
-  trace = FALSE,
-  seasonal = TRUE
-)
->>>>>>> 9eda7bdfd240fc23fe3d7149d4cdaeacb4e19e80
 
 summary(mod.arima)
 # SELF-DETERMINED parameters
@@ -318,7 +301,7 @@ lower <- data.frame(arima_pred) %>%
 upper <- data.frame(arima_pred) %>%
   dplyr::filter(Point.Forecast <= 500) %>%
   tail(1)
-level2100 <- data.frame(arima_pred)["Jan 2100", ]
+level2100 <- data.frame(arima_pred)['Jan 2100',]
 co2_bounds <- rbind(lower, upper, level2100)
 co2_bounds
 ```
@@ -371,6 +354,7 @@ p_8_add <- components(dcmp_add) %>%
   PACF(remainder) %>%
   autoplot() + labs(title = "PACF Residuals additive decomposition") +
   theme(plot.title = element_text(size = 10))
+
 ```
 
 ```{r multiplicative SLT decomposting, echo = FALSE, message = FALSE}
@@ -404,12 +388,8 @@ p_8_multi <- components(dcmp_multi) %>%
   autoplot() + labs(title = "PACF Residuals multiplicative decomposition") +
   theme(plot.title = element_text(size = 10))
 
-<<<<<<< HEAD
 #(p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
 # > trend: strong positive linear trend across years irregular elements: The data oscilate around 0. From the ACF plot, residuals have strong autocorrelation terms, indicating trend and seasonal variation. The PACF plot ocilates with many significant lags seasonality: strong seasonality - will explore details in next plot
-=======
-# (p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
->>>>>>> 9eda7bdfd240fc23fe3d7149d4cdaeacb4e19e80
 ```
 
 
