@@ -10,7 +10,7 @@ library(tidyverse)
 library(tsibble)
 library(latex2exp)
 theme_set(theme_minimal())
-knitr::opts_chunk$set(dpi=1000)
+knitr::opts_chunk$set(dpi = 1000)
 
 # additional packages
 library(dplyr)
@@ -20,8 +20,8 @@ library(forecast)
 library(stargazer)
 library(gridExtra)
 
-## To laod All data sets in the book "Forecasting: principles and practice" 
-#by Rob J Hyndman and George Athanasopoulos
+## To laod All data sets in the book "Forecasting: principles and practice"
+# by Rob J Hyndman and George Athanasopoulos
 # install.packages("fpp3")
 # install.packages("fpp2")
 
@@ -36,89 +36,105 @@ Following up on the 1997 publication on the study on the time-dependent atmosphe
 ## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
 
 ```{r data-load-pipeline}
-# read csv from link and save it as a data file
-co2_present <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv", sep = ",", skip=56)
-write.csv(co2_present, "./co2_present.csv")
-co2_present
+# read csv from link
+co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
+  sep = ",",
+  skip = 51
+)
+head(co2_present_raw)
 ```
-```{r create-time-component}
-co2_present_ts <- co2_present %>% 
-                select(year, month, average, deseasonalized) %>%
-                mutate(time_index = yearmonth(lubridate::make_datetime(year = year, 
-                                                            month = month))) %>%
-                tsibble::as_tsibble(index = time_index) %>% 
-                drop_na()
 
-head(co2_present_ts)
+```{r create-time-component}
+co2_present_raw <- co2_present_raw %>%
+  select(year, month, day, average) %>%
+  mutate(time_index = lubridate::ymd(
+    paste(
+      year,
+      month,
+      day,
+      sep = "-"
+    )
+  ))
+
+co2_present_raw %>%
+  ggplot(aes(y = average, x = time_index)) +
+  geom_line()
+```
+
+```{r EDA: Fill the missing weekly data from monthly}
+co2_present_month <- read.csv(
+  "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
+  sep = ",", skip = 56
+)
+
+co2_present <- co2_present_raw %>%
+  left_join(y = co2_present_month, by = c("year", "month")) %>%
+  within(., avg <- ifelse(average.x == -999.99, average.y, average.x)) %>%
+  select(time_index, avg)
 ```
 
 ```{r}
+co2_present_ts <- co2_present %>%
+  tsibble::as_tsibble(index = time_index) %>%
+  drop_na()
+
 # basic information about the data
-print(sum(is.na(co2_present_ts)))
+head(co2_present_ts)
+# print(sum(is.na(co2_present_ts)))
 # print(start(co2_present$time_index))
 # print(end(co2_present$time_index))
 ```
 
 ```{r time-plot}
 co2_present_ts %>%
-  ggplot() + 
-  aes(x=time_index, y=average) + 
-  geom_line(color = 'steelblue') +
+  ggplot() +
+  aes(x = time_index, y = avg) +
+  geom_line(color = "steelblue") +
   labs(
     title = TeX(r'(Present Date Monthly Mean $CO_2$)'),
     subtitle = 'The "Keeling Curve"',
-    x = 'Month and Year',
+    x = "Month and Year",
     y = TeX(r'($CO_2$ parts per million)')
   )
 ```
 
-
-```{r}
-p1 <- co2_present_ts %>%
-  autoplot(average, colour="gray") +
-  geom_line(aes(y=deseasonalized), colour = "#D55E00") +
-  labs(y = "CO2 ppm", x="Time",
-    title = "Present Date Monthly Mean CO2")
-p1
-```
-
 ```{r decomposition}
-dcmp <- co2_present_ts %>% 
-          model(classical_decomposition(average, type = "additive"))
+dcmp <- co2_present_ts %>%
+  model(stl = STL(avg))
 
 components(dcmp) %>% autoplot()
-
 ```
 > There seem to be a noticible non-linear relationship to the trend since 1970. However, the seasonality effect remains periodic and unchanged.
 
 ```{r ETSDA plots}
-co2_present_ts <- co2_present_ts %>% 
-                  mutate(average_4_month_MA = slider::slide_dbl(average, mean,
-                                  .before = 3, .after = 0, .complete = TRUE))
+co2_present_ts <- co2_present_ts %>%
+  mutate(ma_4_week = slider::slide_dbl(avg, mean,
+    .before = 3, .after = 0, .complete = TRUE
+  ))
 
 # plot the series
 series <- co2_present_ts %>%
-            ggplot() +
-            geom_point(aes(x = time_index, y = average)) +
-            geom_line(aes(x=time_index, y=average_4_month_MA), color = 'red') +
-            ggtitle("CO2 Level Time Series") +
-            xlab("Date") +
-            ylab("CO2 (ppm)")
+  ggplot() +
+  geom_point(aes(x = time_index, y = avg)) +
+  geom_line(aes(x = time_index, y = ma_4_week), color = "red") +
+  ggtitle("CO2 Level Time Series") +
+  xlab("Date") +
+  ylab("CO2 (ppm)")
 
 # plot of histogram
-histogram <- co2_present_ts %>% 
-            ggplot(aes(x=average)) +
-            geom_histogram(color="black", fill="white", binswidth=10) +
-            ggtitle("CO2 Level Histogram") +
-            xlab("CO2 (ppm)")
+histogram <- co2_present_ts %>%
+  ggplot(aes(x = avg)) +
+  geom_histogram(color = "black", fill = "white", binwidth = 10) +
+  ggtitle("CO2 Level Histogram") +
+  xlab("CO2 (ppm)")
 
 
 # plot acf and pacf
-acf <- ggAcf(co2_present_ts$average, level=0.95)
-pacf <- ggPacf(co2_present_ts$average, level=0.95)
+acf <- ggAcf(co2_present_ts$avg, ci = 0.95)
+pacf <- ggPacf(co2_present_ts$avg, ci = 0.95)
 
 (series | histogram) /
-(acf | pacf)
+  (acf | pacf)
 ```
 >'Non-Stationary, Trends in Features applying 1st order diff'
 
@@ -129,9 +145,9 @@ Descriptively compare realized atmospheric CO2 levels to those predicted by your
 
 ```{r, original-linear-model}
 # Fit a linear time trend model examine the characteristics of the residuals
-mod.lm1 = lm(co2 ~ time(co2))
+mod.lm1 <- lm(co2 ~ time(co2))
 summary(mod.lm1)
-plot(mod.lm1, which=c(1,1))
+plot(mod.lm1, which = c(1, 1))
 
 # creating new data
 # forecast for n steps
@@ -158,29 +174,29 @@ Seasonally adjust the weekly NOAA data, and split both seasonally-adjusted (SA) 
 
 ```{r first order diff ETSDA plot}
 # plot the series
-co2_present_ts$diff <- c(0, diff(co2_present_ts$average))
+co2_present_ts$diff <- c(0, diff(co2_present_ts$avg))
 
 series <- co2_present_ts %>%
-            ggplot(aes(x = time_index, y = diff)) +
-            geom_line() +
-            ggtitle("CO2 1st Order Difference Time Series") +
-            xlab("Date") +
-            ylab("CO2 (ppm)")
+  ggplot(aes(x = time_index, y = diff)) +
+  geom_line() +
+  ggtitle("CO2 1st Order Difference Time Series") +
+  xlab("Date") +
+  ylab("CO2 (ppm)")
 
 # plot of histogram
-histogram <- co2_present_ts %>% 
-            ggplot(aes(x=diff)) +
-            geom_histogram(color="black", fill="white", binswidth=10) +
-            ggtitle("CO2 1st Order Difference Histogram") +
-            xlab("CO2 (ppm)")
+histogram <- co2_present_ts %>%
+  ggplot(aes(x = diff)) +
+  geom_histogram(color = "black", fill = "white", binswidth = 10) +
+  ggtitle("CO2 1st Order Difference Histogram") +
+  xlab("CO2 (ppm)")
 
 
 # plot acf and pacf
-acf <- ggAcf(pa$diff, level=0.95)
-pacf <- ggPacf(pa$diff, level=0.95)
+acf <- ggAcf(pa$diff, level = 0.95)
+pacf <- ggPacf(pa$diff, level = 0.95)
 
 (series | histogram) /
-(acf | pacf)
+  (acf | pacf)
 ```
 > looks like white noise ...
 
