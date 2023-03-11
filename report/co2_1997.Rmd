@@ -64,7 +64,8 @@ Furthermore, from the  $CO_2$ Decomposition graph, we observed trend, season and
 co2_enhanced <- co2 %>%
   as_tsibble() %>%
   mutate(
-    annual_growth = (value - lag(value, n = 12)) / lag(value, n = 12) * 100, # Difference in route between years
+    # Difference in route between years
+    annual_growth = (value - lag(value, n = 12)) / lag(value, n = 12) * 100,
     log_value = log(value)
   )
 
@@ -74,10 +75,10 @@ p_3 <- co2_enhanced %>%
   aes(x = index, y = annual_growth) +
   geom_line(color = "steelblue") +
   labs(
-    title = TeX(r'(Annualized Growth $CO_2$)'),
+    title = TeX(r"(Annualized Growth $CO_2$)"),
     subtitle = 'The "Keeling Curve"',
     x = "Month and Year",
-    y = TeX(r'($CO_2$ Annualized Growth Rate)')
+    y = TeX(r"($CO_2$ Annualized Growth Rate)")
   ) +
   theme(plot.title = element_text(size = 10))
 
@@ -85,7 +86,7 @@ p_3 <- co2_enhanced %>%
 p_4 <- co2_enhanced %>%
   ggplot(aes(x = value)) +
   geom_histogram(binwidth = 1) +
-  labs(title = TeX(r'(Histogram Monthly Mean $CO_2$)'), col = " blue") +
+  labs(title = TeX(r"(Histogram Monthly Mean $CO_2$)"), col = " blue") +
   xlab("Monthly Mean") +
   theme(plot.title = element_text(size = 10))
 # scale_x_continuous(limits = c(0, 16), breaks = seq(1,16,2))
@@ -101,7 +102,7 @@ p_5_add <- components(dcmp_add) %>%
   autoplot(value, colour = "gray") +
   geom_line(aes(y = trend), colour = "#D55E00") +
   labs(
-    y = TeX(r'($CO_2$ Annualized Growth Rate)'),
+    y = TeX(r"($CO_2$ Annualized Growth Rate)"),
     x = "Month and Year",
     title = "Monthly Mean CO2"
   ) +
@@ -165,7 +166,8 @@ First, we evaluated a linear trend model using time as the explanatory variable 
 We then evaluated the quadratic model by adding the quadratic term of time. The coefficients are reported in Table 1 and are statistically significant. The residual plot improves with less curvature. Variance still shows some small level of heteroskedasticity in Figure \@ref(fig:quadratic-effect-model). This model still does not adequately capture the data characteristics.
 
 ```{r polynomial-trend-seasonality, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Polynomial trends selection using information criterions"}
-# Fit a polynomial time trend model that incorporates seasonal dummy variables, and use this model to generate forecasts to the year 2020.
+# Fit a polynomial time trend model that incorporates seasonal dummy variables
+# use this model to generate forecasts to the year 2020.
 
 # function to be AIC and BIC scores
 eval_results <- function(models) {
@@ -329,10 +331,10 @@ p_2 <- co2_enhanced %>%
   aes(x = index, y = log_value) +
   geom_line(color = "steelblue") +
   labs(
-    title = TeX(r'(Log Monthly Mean $CO_2$)'),
+    title = TeX(r"(Log Monthly Mean $CO_2$)"),
     subtitle = 'The "Keeling Curve"',
     x = "Month and Year",
-    y = TeX(r'(Log of $CO_2$ parts per million)')
+    y = TeX(r"(Log of $CO_2$ parts per million)")
   ) +
   theme(plot.title = element_text(size = 10))
 
