@@ -19,6 +19,7 @@ library(patchwork)
 library(forecast)
 library(stargazer)
 library(gridExtra)
+library(magrittr)
 
 ## To laod All data sets in the book "Forecasting: principles and practice"
 # by Rob J Hyndman and George Athanasopoulos
@@ -47,7 +48,7 @@ head(co2_present_raw)
 ```{r create-time-component}
 co2_present_raw <- co2_present_raw %>%
   select(year, month, day, average) %>%
-  mutate(time_index = ymd(
+  mutate(time_index = yearweek(
     paste(
       year,
       month,
@@ -67,12 +68,13 @@ co2_present_month <- read.csv(
   sep = ",", skip = 56
 )
 
-co2_present <- co2_present_raw %>%
+co2_present_raw <- co2_present_raw %>%
   left_join(y = co2_present_month, by = c("year", "month")) %>%
-  within(., value <- ifelse(average.x == -999.99, average.y, average.x)) %>%
-  dplyr::select(time_index, value) %>%
-  tsibble::as_tsibble(index = time_index) %>%
-  drop_na()
+  within(., value <- ifelse(average.x == -999.99, average.y, average.x))
+
+co2_present <- co2_present_raw %>%
+  dplyr::select(time_index, year, month, day, value) %>%
+  tsibble::as_tsibble(index = time_index)
 
 # basic information about the data
 # head(co2_present)
@@ -96,15 +98,14 @@ co2_present %>%
 ```
 
 ```{r CO2-ETSDA, echo = FALSE, warning=FALSE, message=FALSE, fig.align='center', out.width="65%", fig.cap="Atmospheric CO2 Level Time Series Overview"}
-co2_present <- co2_present %>%
+co2_enhanced <- co2_present %>%
   mutate(
-    diff_growth = value - lag(value, n = 52), # Difference in route between years
-    annual_growth = diff_growth / lag(value, n = 52) * 100,
+    annual_growth = (value - lag(value, n = 52)) / lag(value, n = 52) * 100,
     log_value = log(value)
   )
 
 # plot the annualized growth rate
-p_3 <- co2_present %>%
+p_3 <- co2_enhanced %>%
   ggplot() +
   aes(x = time_index, y = annual_growth) +
   geom_line(color = "steelblue") +
@@ -117,7 +118,7 @@ p_3 <- co2_present %>%
   theme(plot.title = element_text(size = 10))
 
 # plot the histogram
-p_4 <- co2_present %>%
+p_4 <- co2_enhanced %>%
   ggplot(aes(x = value)) +
   geom_histogram(binwidth = 1) +
   labs(title = TeX(r'(Histogram Monthly Mean $CO_2$)'), col = " blue") +
@@ -127,7 +128,7 @@ p_4 <- co2_present %>%
 
 
 # Use additive method in STL decomposition
-dcmp_add <- co2_present %>%
+dcmp_add <- co2_enhanced %>%
   model(stl = STL(value))
 
 # plot of time series
@@ -149,54 +150,48 @@ p_6_add <- components(dcmp_add) %>%
 (p_5_add | p_3) / (p_4 | p_6_add)
 ```
 
-```{r ETSDA plots}
-co2_present <- co2_present %>%
-  mutate(ma_4_week = slider::slide_dbl(value, mean,
-    .before = 3, .after = 0, .complete = TRUE
-  ))
-
-# plot the series
-series <- co2_present %>%
-  ggplot() +
-  geom_point(aes(x = time_index, y = value)) +
-  geom_line(aes(x = time_index, y = ma_4_week), color = "red") +
-  ggtitle("CO2 Level Time Series") +
-  xlab("Date") +
-  ylab("CO2 (ppm)")
-
-# plot of histogram
-histogram <- co2_present %>%
-  ggplot(aes(x = value)) +
-  geom_histogram(color = "black", fill = "white", binwidth = 10) +
-  ggtitle("CO2 Level Histogram") +
-  xlab("CO2 (ppm)")
-
-
-# plot acf and pacf
-acf <- ggAcf(co2_present$value, ci = 0.95)
-pacf <- ggPacf(co2_present$value, ci = 0.95)
-
-(series | histogram) /
-  (acf | pacf)
-```
->'Non-Stationary, Trends in Features applying 1st order diff'
-
-
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
 
-Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. "Task 2a"). (You do not need to run any formal tests for this task.) 
+To be able to compare the observed weekly data with model forecasts, which were done using monthly series, we aggregated the weekly data to monthly data by taking all average for all the weeks in a month.
+
+```{r generate-monthly-indexed-summary}
+co2_present_monthly <- co2_present %>%
+  index_by(month_index = ~ yearmonth(.)) %>%
+  summarise(
+    value = mean(value)
+  ) %>%
+  tsibble::as_tsibble(index = month_index) %>%
+  drop_na()
+```
+
+```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
+# box plot
+# todo: Do we need it?
+co2_present_ts <- co2_present_monthly %>%
+  select(month_index, value) %>%
+  as.ts()
+
+box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
+```
 
 ```{r, original-linear-model}
 # Fit a linear time trend model examine the characteristics of the residuals
+
 mod.lm1 <- lm(co2 ~ time(co2))
-summary(mod.lm1)
-plot(mod.lm1, which = c(1, 1))
+mod.lm1
 
 # creating new data
-# forecast for n steps
-# new_data <- seq()
-# lin.forecast <- forecast::forecast(mod.lm1, level=c(95), h=110*12)
-# lin.forecast
+co2_new_date <- co2_present_monthly %>%
+  mutate(date = as.Date(month_index), date_decimal = decimal_date(date)) %>%
+  select(date_decimal, value) %>%
+  as.ts()
+
+lin_forecast <- forecast::forecast(mod.lm1, level = c(95), newdata = co2_new_date)
+
+co2_present_monthly %>%
+  ggplot() +
+  # geom_line(aes(x = month_index, y = value), color = "steelblue") +
+  geom_line(aes(x = co2_new_date$date, y = lin_forecast), color = "red")
 ```
 
 ## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
@@ -210,6 +205,17 @@ Descriptively compare realized atmospheric CO2 levels to those predicted by your
 In 1997 you made predictions about the first time that CO2 would cross 420 ppm. How close were your models to the truth? 
 
 After reflecting on your performance on this threshold-prediction task, continue to use the weekly data to generate a month-average series from 1997 to the present, and compare the overall forecasting performance of your models from Parts 2a and 3b over the entire period. (You should conduct formal tests for this task.) 
+
+```{r, cross-420-ppm}
+co2_present %>%
+  dplyr::filter(value >= 420) %>%
+  head(1)
+```
+
+$CO_2$ crossed 420 ppm in the last week of April 2021. This is 10 years faster than the prediction made by the linear model in 1997. The ARIMA model predicted that $CO_2$ would cross 420 ppm by May 2031.
+
+```{r, cross-420-ppm}
+```
 
 ## (4 points) Task 5b: Train best models on present data
 
