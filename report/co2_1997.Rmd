@@ -48,8 +48,8 @@ The CO2 data was measured continuously at the Mauna Loa Observatory in Hawaii fr
 
 ```{r basic information, echo = FALSE, message = FALSE, warning = FALSE, include=FALSE}
 # basic information about the data
-print(sum(is.na(co2))) #check for NA data
-print(start(co2)) #start of the time series
+print(sum(is.na(co2))) # check for NA data
+print(start(co2)) # start of the time series
 print(end(co2)) # end of the time series
 summary(co2)
 glimpse(co2)
@@ -121,7 +121,7 @@ p_6_add <- components(dcmp_add) %>%
 ```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
 # box plot
 box <- boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
-max_min_diff <- max(box$stats[3,])- min(box$stats[3,])
+max_min_diff <- max(box$stats[3, ]) - min(box$stats[3, ])
 ```
 
 The boxplot in Figure \@ref(fig:boxplot) further validated the seasonal pattern in the Decomposition graph. The maximum level occurs in May and then decreases during the spring and summer as new plant growth takes $CO_2$ out of the atmosphere. After reaching a minimum in October, the level rises again in the late fall and winter as plants and leaves die off and decay, releasing CO2 back into the atmosphere. The difference between the highest and lowest monthly averages is $`r max_min_diff`$ ppmv.  
@@ -148,7 +148,6 @@ mod.lm1 <- lm(co2 ~ time(co2))
 
 # quadratic time trend model.
 mod.lm2 <- lm(co2 ~ time(co2) + I(time(co2)^2))
-
 ```
 
 ```{r linear-model-stargazer, echo=FALSE, results = "asis",  message = FALSE, echo=FALSE, warning=FALSE}
@@ -168,15 +167,23 @@ stargazer(mod.lm1, mod.lm2,
 ```{r linear-quadratic-model-plot, warning=FALSE, message=FALSE, fig.align='center', out.width="65%", fig.cap="Residuals vs Fitted Plots: Linear Model (Left) Quadratic Model (Right)", echo=FALSE}
 # plot the residuals
 
-lm_plot <- ggplot(mod.lm1, aes(.fitted, .resid)) + geom_point() + 
-  stat_smooth() + xlab("Fitted Values") +  ylab("Residuals")+
-  labs(title="Linear Model Fitted vs Residuals Plot") +
-  theme(plot.title = element_text(size=10)) + ylim(-5, 5)
+lm_plot <- ggplot(mod.lm1, aes(.fitted, .resid)) +
+  geom_point() +
+  stat_smooth() +
+  xlab("Fitted Values") +
+  ylab("Residuals") +
+  labs(title = "Linear Model Fitted vs Residuals Plot") +
+  theme(plot.title = element_text(size = 10)) +
+  ylim(-5, 5)
 
-quard_plot <- ggplot(mod.lm2, aes(.fitted, .resid)) + geom_point() + 
-  stat_smooth() + xlab("Fitted Values") +  ylab("Residuals")+
-  labs(title="Quardratic Model Fitted vs Residuals Plot") +
-  theme(plot.title = element_text(size=10)) + ylim(-5, 5)
+quard_plot <- ggplot(mod.lm2, aes(.fitted, .resid)) +
+  geom_point() +
+  stat_smooth() +
+  xlab("Fitted Values") +
+  ylab("Residuals") +
+  labs(title = "Quardratic Model Fitted vs Residuals Plot") +
+  theme(plot.title = element_text(size = 10)) +
+  ylim(-5, 5)
 
 lm_plot | quard_plot
 ```
@@ -225,7 +232,6 @@ results %>%
 
 ```{r polynomial-model, message = FALSE, warning=FALSE}
 mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
-
 ```
 
 The model results in Table 2 below show that all coefficients are significant, with p-value bellow 0.001. In Figure \@ref(fig:polynomial-diagnostic), we plot both the residuals and noted that residuals have significant positive autocorrelation (not randomly distributed) which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated.
@@ -250,21 +256,23 @@ stargazer(summary(mod.poly)$coefficients,
 par(mfrow = c(2, 2))
 plot(mod.poly$residuals)
 plot(forecast::forecast(mod.poly, h = 20 * 12))
-
 ```
 
 
 ```{r polynomial-diagnostic, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="60%", fig.cap="Polynomial Residuals Diagnostic Plots"}
-#set test=FALSE so we don't need to print out the Breusch-Godfrey(BG) test result. Set Test=True to print out the BG results
+# set test=FALSE so we don't need to print out the Breusch-Godfrey(BG) test result. Set Test=True to print out the BG results
 checkresiduals(mod.poly, test = FALSE)
 ```
 
 
 ```{r polynomial-forecast, echo=FALSE}
-#forecast to 2020
-fit_p <- forecast::forecast(mod.poly, level=95, h = 12 * 12, robust=TRUE)
-plot(fit_p)
+# forecast to 2030 December
+par(mfrow = c(1, 1))
+fit_2030 <- forecast::forecast(mod.poly, level = 95, h = 33 * 12, robust = TRUE)
 
+plot(fit_2030)
+abline(v = 2020, col = "red")
+abline(v = 2030, col = "red")
 ```
 
 
@@ -292,17 +300,16 @@ Figure \@ref(fig:first-order-diff) shows that, after taking a first difference o
 Because the ACF has persistent significant lags while the PACF has dampening oscillations, the data leans towards an AR(3) process. With the differencing component, the ARIMA(p,1,q) model will be the most appropriate. The correct MA and AR parameters will be tested. To select the best model for CO2 level, the BIC information criterion is used because BIC has a larger penalty for models with more parameters and therefore selects sparser models with fewer parameters compared to AIC and AICc.
 
 ```{r model-fitting, echo = FALSE, warning = FALSE}
-#use auto
-mod.arima <- auto.arima(co2, d = 1, ic = "bic",  trace = FALSE,  seasonal = TRUE)
-
-summary(mod.arima)
+# use auto
+mod.arima <- auto.arima(co2, d = 1, ic = "bic", trace = FALSE, seasonal = TRUE)
+mod.arima
+# summary(mod.arima)
 # SELF-DETERMINED parameters
 # order <- c(1, 1, 2)
 # mod.arima <- arima(co2, order = order, seasonal = list(order = order, period = NA))
 # summary(mod.arima)
 # arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
 # plot(arima_pred)
-
 ```
 
 
@@ -311,10 +318,10 @@ summary(mod.arima)
 #   model(arima = ARIMA(value ~ 1 + pdq(0:5, 0:2, 0:5) + PDQ(0:5, 0:2, 0:5),
 #                       ic = 'bic', stepwise=F, greedy=F,
 #                       trace=TRUE))
-# 
+#
 # arima_model %>%
 #   report()
-#this process selects Model: ARIMA(1,0,1)(4,1,0)[12] w/ drift 
+# this process selects Model: ARIMA(1,0,1)(4,1,0)[12] w/ drift
 
 # arima_model  %>%
 #   select(arima) %>%
@@ -332,7 +339,6 @@ The final model is estimated to be ARIMA(0,1,1)(1,1,2)[12] with a BIC of 201.78.
 ```{r ARIMA-forecast, message=FALSE, warning=FALSE ,fig.align='center', out.width="65%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 level 2022 forecast"}
 arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 25 * 12)
 plot(arima_pred)
-
 ```
 
 
@@ -436,11 +442,10 @@ p_8_multi <- components(dcmp_multi) %>%
 ```
 
 ```{r include=FALSE}
-
 # plot the residuals
-par(mfrow=c(2,2))
-plot(mod.lm1, which = c(1, 2), main="Linear Model", cex.main = 1, cex.sub=0.8, cex.lab = 0.8, cex.axis = 0.8)
+par(mfrow = c(2, 2))
+plot(mod.lm1, which = c(1, 2), main = "Linear Model", cex.main = 1, cex.sub = 0.8, cex.lab = 0.8, cex.axis = 0.8)
 
-plot(mod.lm2, which = c(1, 2), main="Quadratic Model", cex.main = 1, cex.lab = 0.8, cex.axis = 0.8)
+plot(mod.lm2, which = c(1, 2), main = "Quadratic Model", cex.main = 1, cex.lab = 0.8, cex.axis = 0.8)
 ```
 
