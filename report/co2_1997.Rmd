@@ -234,7 +234,7 @@ results %>%
 mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
 ```
 
-The model results in Table 2 below show that all coefficients are significant, with p-value bellow 0.001. In Figure \@ref(fig:polynomial-diagnostic), we plot both the residuals and noted that residuals have significant positive autocorrelation (not randomly distributed) which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated.
+The model results in Table 2 below show that all coefficients are significant, with p-value bellow 0.001. In Figure \@ref(fig:polynomial-diagnostic), we plot the residuals and noted that residuals have significant positive autocorrelation (not randomly distributed) which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated.
 
 While further model improvement is needed, we will use the fitted polynomial model to forecast the $CO_2$ level through 2020 (Figure \@ref(fig:polynomial-forecast)). This polynomial time trend with a seasonal dummy variable was able to capture the linear and seasonal trend when forecasted to 2020. There's a slight curve at the 2020 tail of the trend due to the 3rd degree polynomial.
 
@@ -265,7 +265,7 @@ checkresiduals(mod.poly, test = FALSE)
 ```
 
 
-```{r polynomial-forecast, echo=FALSE}
+```{r polynomial-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="60%", fig.cap="Linear model with polynomial trend and dummy seasonality forecast"}
 # forecast to 2030 December
 par(mfrow = c(1, 1))
 fit_2030 <- forecast::forecast(mod.poly, level = 95, h = 33 * 12, robust = TRUE)
@@ -292,6 +292,7 @@ co2 %>% ggtsdisplay(main = "")
 # 1st DIFFERENCING
 diff(co2) %>% ggtsdisplay(main = "")
 ```
+
 ```{r adf-test, warning = FALSE}
 adf.test(diff(co2))
 ```
@@ -363,7 +364,7 @@ level2100 <- data.frame(arima_pred)["Jan 2100", ]
 co2_bounds <- rbind(lower, upper, level2100)
 co2_bounds
 ```
-To demonstrate future accumulated atmospheric $CO_2$ level, we ran a forecast to see when $CO_2$ level will hit certain target. Based on the model forecasts, the atmospheric $CO_2$ level is expected to reach 420 ppm by May 2031 and 500 ppm by Oct 2086. By Jan 2100, CO2 levels will be at 523.5 ppm. We are not confident about these predictions because the lower bound of the confidence interval has plateaued at approximately 390 ppm while the upper bound continues to grow higher. While the model results has a wide confidence interval, the actual level accumulation could dramatically exceed the forecast level. Since $CO_2$ is a green house gas, any actions that we take now could prevent drastic damage in the future.
+To demonstrate future accumulated atmospheric $CO_2$ level, we ran a forecast to see when $CO_2$ level will hit certain target. Based on the model forecasts (Figure \@ref(fig:ARIMA-distant-future-forecast)), the atmospheric $CO_2$ level is expected to reach 420 ppm by May 2031 and 500 ppm by Oct 2086. By Jan 2100, CO2 levels will be at 523.5 ppm. We are not confident about these predictions because the lower bound of the confidence interval has plateaued at approximately 390 ppm while the upper bound continues to grow higher. While the model results has a wide confidence interval, the actual level accumulation could dramatically exceed the forecast level. Since $CO_2$ is a green house gas, any actions that we take now could prevent drastic damage in the future.
 
 ```{r extra plots, echo = FALSE, message = FALSE, include=FALSE}
 p_1 <- tsibble::as_tsibble(co2) %>%
