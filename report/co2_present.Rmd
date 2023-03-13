@@ -387,10 +387,53 @@ co2.weekly.arima.sa %>% report()
 > Since the searies is sesonally adjusted, westimated this to be ARIMA(2,1,3)
 
 
-```{r in-out-sample}
+```{r polynomial-sa-fit}
+fit_quadratic_season <- co2_train %>%
+  model(trend_model = TSLM(seasonal_adj_value ~ trend() 
+                                              + I(trend()^2) 
+                                              + I(trend()^2) 
+                                              + season()))
 ```
 
+```{r in-sample-fit}
+# extract fitted values and merge fitted values together
+nsa.fitted <- co2.weekly.arima.nsa %>% fitted.values()
+sa.fitted <- co2.weekly.arima.sa %>% fitted.values()
 
+fitted_values <- nsa.fitted %>% left_join(sa.fitted, by="time_index", suffix=c("_nsa", "_sa"))
+in_sample_df <- co2_train %>% left_join(fitted_values, by="time_index")
+
+
+p_insample_nsa <- in_sample_df %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = value, colour = "Data")) +
+  geom_line(aes(y = .fitted_nsa, colour = "Fitted")) +
+  labs(y = "Time",
+       title = "In-Sample Non-Seaonal Adjusted ARIMA Model")
+
+p_insample_sa <- in_sample_df %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
+  geom_line(aes(y = .fitted_sa, colour = "Fitted")) +
+  labs(y = "Time",
+       title = "In-Sample Seaonal Adjusted ARIMA Model")
+
+
+p_insample_poly <- augment(fit_quadratic_season)%>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
+  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  labs(y = "Time",
+       title = "In-Sample Seasonality Adjusted 3rd Degree Polynomial")
+
+p_insample_nsa / p_insample_sa / p_insample_poly
+```
+
+```{r out-of-sample-forecast}
+# TODO (after gym break)
+```
+
+-------------------------
 ```{r ETSDA normal series}
 # ETSDA
 # plot the series
