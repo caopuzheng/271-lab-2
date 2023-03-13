@@ -391,8 +391,9 @@ co2.weekly.arima.sa %>% report()
 fit_quadratic_season <- co2_train %>%
   model(trend_model = TSLM(seasonal_adj_value ~ trend() 
                                               + I(trend()^2) 
-                                              + I(trend()^2) 
+                                              + I(trend()^3) 
                                               + season()))
+fit_quadratic_season %>% report()
 ```
 
 ```{r in-sample-fit}
