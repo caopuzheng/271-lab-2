@@ -11,6 +11,8 @@ library(tsibble)
 library(latex2exp)
 theme_set(theme_minimal())
 knitr::opts_chunk$set(dpi = 1000)
+knitr::opts_chunk$set(tidy.opts = list(width_cutoff = 100), tidy = TRUE)
+knitr::opts_chunk$set(message = FALSE)
 
 # additional packages
 library(dplyr)
@@ -104,8 +106,24 @@ co2_enhanced <- co2_present %>%
     log_value = log(value)
   )
 
+# Use additive method in STL decomposition
+dcmp_add <- co2_enhanced %>%
+  model(stl = STL(value))
+
+# plot of time series
+p1 <- components(dcmp_add) %>%
+  as_tsibble() %>%
+  autoplot(value, colour = "gray") +
+  geom_line(aes(y = trend), colour = "#D55E00") +
+  labs(
+    y = TeX(r"($CO_2$ Annualized Growth Rate)"),
+    x = "Month and Year",
+    title = "Monthly Mean CO2"
+  ) +
+  theme(plot.title = element_text(size = 10))
+
 # plot the annualized growth rate
-p_3 <- co2_enhanced %>%
+p2 <- co2_enhanced %>%
   ggplot() +
   aes(x = time_index, y = annual_growth) +
   geom_line(color = "steelblue") +
@@ -118,7 +136,7 @@ p_3 <- co2_enhanced %>%
   theme(plot.title = element_text(size = 10))
 
 # plot the histogram
-p_4 <- co2_enhanced %>%
+p3 <- co2_enhanced %>%
   ggplot(aes(x = value)) +
   geom_histogram(binwidth = 1) +
   labs(title = TeX(r'(Histogram Monthly Mean $CO_2$)'), col = " blue") +
@@ -126,31 +144,12 @@ p_4 <- co2_enhanced %>%
   theme(plot.title = element_text(size = 10))
 # scale_x_continuous(limits = c(0, 16), breaks = seq(1,16,2))
 
-
-# Use additive method in STL decomposition
-dcmp_add <- co2_enhanced %>%
-  model(stl = STL(value))
-
-# plot of time series
-p_5_add <- components(dcmp_add) %>%
-  as_tsibble() %>%
-  autoplot(value, colour = "gray") +
-  geom_line(aes(y = trend), colour = "#D55E00") +
-  labs(
-    y = TeX(r"($CO_2$ Annualized Growth Rate)"),
-    x = "Month and Year",
-    title = "Monthly Mean CO2"
-  ) +
-  theme(plot.title = element_text(size = 10))
-
 # plot the components
-p_6_add <- components(dcmp_add) %>%
+p4 <- components(dcmp_add) %>%
   autoplot() + theme(plot.title = element_text(size = 10))
 
-(p_5_add | p_3) / (p_4 | p_6_add)
+(p1 | p2) / (p3 | p4)
 ```
-
-## (1 point) Task 2b: Compare linear model forecasts against realized CO2
 
 To be able to compare the observed weekly data with model forecasts, which were done using monthly series, we aggregated the weekly data to monthly data by taking all average for all the weeks in a month.
 
@@ -166,39 +165,80 @@ co2_present_monthly <- co2_present %>%
 
 ```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
 # box plot
-# todo: Do we need it?
 co2_present_ts <- co2_present_monthly %>%
   select(month_index, value) %>%
   as.ts()
 
 box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
 ```
+> The boxplot is shifted by a month, which could indicate a systematic change?
+
+## (1 point) Task 2b: Compare linear model forecasts against realized CO2
+
+Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. “Task 2a”). (You do not need to run any formal tests for this task.)
 
 ```{r, original-linear-model}
-# Fit a linear time trend model examine the characteristics of the residuals
+# create a time series for the prediction period
+co2_cutoff <- yearmonth(lubridate::make_date(1998, 1))
+prediction_ts <- co2_present_monthly %>%
+  filter(month_index >= co2_cutoff)
+h <- length(prediction_ts$month_index)
 
-mod.lm1 <- lm(co2 ~ time(co2))
-mod.lm1
+# original linear model with forecast
+mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
+poly_forecast <- forecast::forecast(mod.poly, level = c(95), h = h)
 
-# creating new data
-co2_new_date <- co2_present_monthly %>%
-  mutate(date = as.Date(month_index), date_decimal = decimal_date(date)) %>%
-  select(date_decimal, value) %>%
-  as.ts()
+mod.lm <- tslm(co2 ~ trend)
+lm_forecast <- forecast::forecast(mod.lm, level = c(95), h = h)
 
-lin_forecast <- forecast::forecast(mod.lm1, level = c(95), newdata = co2_new_date)
+prediction_ts <- prediction_ts %>%
+  add_column(
+    poly_forecast = poly_forecast$mean
+  ) %>%
+  add_column(
+    lm_forecast = lm_forecast$mean
+  )
 
-co2_present_monthly %>%
+# visualize the forecast vs the actual
+prediction_ts %>%
   ggplot() +
-  # geom_line(aes(x = month_index, y = value), color = "steelblue") +
-  geom_line(aes(x = co2_new_date$date, y = lin_forecast), color = "red")
+  aes(x = month_index) +
+  geom_line(aes(x = month_index, y = value, color = "Actual")) +
+  geom_line(aes(x = month_index, y = lm_forecast, color = "Linear")) +
+  geom_line(aes(x = month_index, y = poly_forecast, color = "Polynomial")) +
+  labs(
+    x = "Month and Year",
+    y = "CO2 Level (ppm)",
+    title = "Model Prediction vs Actual CO2 Level"
+  )
 ```
 
 ## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
 
 
-Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present. 
+Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present.
 
+```{r, original-arima-model}
+# original arima model with forecast
+mod.arima <- arima(co2, order = c(0, 1, 1), seasonal = list(order = c(1, 1, 2), period = 12))
+arima_forecast <- forecast::forecast(mod.arima, level = c(95), h = h)
+
+prediction_ts <- prediction_ts %>% add_column(
+  arima_forecast = arima_forecast$mean
+)
+
+# visualize the forecast vs the actual
+prediction_ts %>%
+  ggplot() +
+  geom_line(aes(x = month_index, y = value, color = "Actual")) +
+  geom_line(aes(x = month_index, y = poly_forecast, color = "Polynomial")) +
+  geom_line(aes(x = month_index, y = arima_forecast, color = "ARIMA")) +
+  labs(
+    x = "Month and Year",
+    y = "CO2 Level (ppm)",
+    title = "Model Prediction vs Actual CO2 Level"
+  )
+```
 
 ## (3 points) Task 4b: Evaluate the performance of 1997 linear and ARIMA models 
 
@@ -214,8 +254,65 @@ co2_present %>%
 
 $CO_2$ crossed 420 ppm in the last week of April 2021. This is 10 years faster than the prediction made by the linear model in 1997. The ARIMA model predicted that $CO_2$ would cross 420 ppm by May 2031.
 
-```{r, cross-420-ppm}
+```{r, generate-prediction-resid}
+resid <- prediction_ts %>%
+  mutate(
+    poly_resid = value - poly_forecast,
+    arima_resid = value - arima_forecast
+  ) %>%
+  select(month_index, poly_resid, arima_resid)
+
+# filter the last value for RMSE, display the RMSE in ggplot
+resid_last <- resid %>%
+  filter(month_index == max(month_index)) %>%
+  mutate(
+    poly_resid = poly_resid + 0.5,
+    arima_resid = arima_resid + 1
+  ) %>%
+  add_column(
+    poly_rmse = round(sqrt(mean(resid$poly_resid^2)), 1),
+    arima_rmse = round(sqrt(mean(resid$arima_resid^2)), 1)
+  )
+
+resid %>%
+  ggplot() +
+  geom_line(aes(x = month_index, y = poly_resid, color = "Polynomial")) +
+  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last) +
+  geom_line(aes(x = month_index, y = arima_resid, color = "ARIMA")) +
+  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last) +
+  labs(
+    x = "Month and Year",
+    y = "CO2 Level (ppm)",
+    title = "Model Prediction Biases"
+  )
 ```
+
+```{r, formal-test-Ljung-Box}
+# use Ljung-Box test to gauge residual stationarity
+
+# Polynomial model residual
+resid %>%
+  select(poly_resid) %>%
+  as.ts() %>%
+  Box.test(lag = 10, type = "Ljung-Box")
+
+resid %>%
+  model(stl = STL(poly_resid)) %>%
+  components() %>%
+  autoplot()
+
+# ARIMA model residual
+resid %>%
+  select(arima_resid) %>%
+  as.ts() %>%
+  Box.test(lag = 10, type = "Ljung-Box")
+
+resid %>%
+  model(stl = STL(arima_resid)) %>%
+  components() %>%
+  autoplot()
+```
+
 
 ## (4 points) Task 5b: Train best models on present data
 
