@@ -357,7 +357,6 @@ co2_train <- co2_enhanced %>%
         filter(year < 2020)
 co2_test <- co2_enhanced %>%
         filter(year >= 2020)
-co2_train
 ```
 
 ```{r estimating-weekly-arima-model}
@@ -409,14 +408,14 @@ p_insample_nsa <- in_sample_df %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = value, colour = "Data")) +
   geom_line(aes(y = .fitted_nsa, colour = "Fitted")) +
-  labs(y = "Time",
+  labs(y = "CO2 Level",
        title = "In-Sample Non-Seaonal Adjusted ARIMA Model")
 
 p_insample_sa <- in_sample_df %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
   geom_line(aes(y = .fitted_sa, colour = "Fitted")) +
-  labs(y = "Time",
+  labs(y = "CO2 Level",
        title = "In-Sample Seaonal Adjusted ARIMA Model")
 
 
@@ -424,14 +423,33 @@ p_insample_poly <- augment(fit_quadratic_season)%>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
   geom_line(aes(y = .fitted, colour = "Fitted")) +
-  labs(y = "Time",
+  labs(y = "CO2 Level",
        title = "In-Sample Seasonality Adjusted 3rd Degree Polynomial")
 
 p_insample_nsa / p_insample_sa / p_insample_poly
 ```
 
 ```{r out-of-sample-forecast}
-# TODO (after gym break)
+arima.nsa.forecast <- forecast::forecast(co2.weekly.arima.nsa, level = c(95), h = nrow(co2_test))
+arima.sa.forecast <- forecast::forecast(co2.weekly.arima.sa, level = c(95), h = nrow(co2_test))
+poly.sa.forecast <- forecast::forecast(fit_quadratic_season, level = c(95), h = nrow(co2_test))
+
+forecast_values <- arima.nsa.forecast %>% 
+                  left_join(arima.sa.forecast, by="time_index", suffix=c("_forecast_nsa", "_forecast_sa")) %>%
+                  left_join(poly.sa.forecast, by="time_index")
+out_of_sample_df <- co2_test %>% left_join(forecast_values, by="time_index")
+
+p_outsample <- out_of_sample_df %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = value.x, colour = "NSA Data")) +
+  geom_line(aes(y = seasonal_adj_value, colour = "SA Data")) +
+  geom_line(aes(y = .mean_forecast_nsa, colour = "NSA ARIMA")) +
+  geom_line(aes(y = .mean_forecast_sa, colour = "SA ARIMA")) +
+  # geom_line(aes(y = .mean, colour = "SA Polynomial")) +
+  labs(y = "CO2 Level",
+       title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model")
+
+p_outsample
 ```
 
 -------------------------
