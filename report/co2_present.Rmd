@@ -439,17 +439,23 @@ forecast_values <- arima.nsa.forecast %>%
                   left_join(poly.sa.forecast, by="time_index")
 out_of_sample_df <- co2_test %>% left_join(forecast_values, by="time_index")
 
-p_outsample <- out_of_sample_df %>%
+p_outsample_nsa <- out_of_sample_df %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = value.x, colour = "NSA Data")) +
-  geom_line(aes(y = seasonal_adj_value, colour = "SA Data")) +
   geom_line(aes(y = .mean_forecast_nsa, colour = "NSA ARIMA")) +
-  geom_line(aes(y = .mean_forecast_sa, colour = "SA ARIMA")) +
   # geom_line(aes(y = .mean, colour = "SA Polynomial")) +
   labs(y = "CO2 Level",
        title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model")
 
-p_outsample
+p_outsample_sa <- out_of_sample_df %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = seasonal_adj_value, colour = "SA Data")) +
+  geom_line(aes(y = .mean_forecast_sa, colour = "SA ARIMA")) +
+  # geom_line(aes(y = .mean, colour = "SA Polynomial")) +
+  labs(y = "CO2 Level",
+       title = "Out-Of-Sample Seaonal Adjusted ARIMA Model")
+
+p_outsample_nsa / p_outsample_sa
 ```
 
 -------------------------
