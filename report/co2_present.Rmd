@@ -5,7 +5,7 @@ output:
   github_document: default
 ---
 
-```{r load packages, echo = FALSE, message = FALSE}
+```{r load packages, echo = FALSE, message = FALSE, warning=FALSE}
 library(tidyverse)
 library(tsibble)
 library(latex2exp)
@@ -395,6 +395,8 @@ fit_quadratic_season <- co2_train %>%
 fit_quadratic_season %>% report()
 ```
 
+> Using same fit as before
+
 ```{r in-sample-fit}
 # extract fitted values and merge fitted values together
 nsa.fitted <- co2.weekly.arima.nsa %>% fitted.values()
@@ -430,33 +432,59 @@ p_insample_nsa / p_insample_sa / p_insample_poly
 ```
 
 ```{r out-of-sample-forecast}
-arima.nsa.forecast <- forecast::forecast(co2.weekly.arima.nsa, level = c(95), h = nrow(co2_test))
-arima.sa.forecast <- forecast::forecast(co2.weekly.arima.sa, level = c(95), h = nrow(co2_test))
-poly.sa.forecast <- forecast::forecast(fit_quadratic_season, level = c(95), h = nrow(co2_test))
+arima.nsa.forecast <- co2.weekly.arima.nsa %>% 
+                forecast(h = nrow(co2_test)) %>%
+                autoplot(co2_test, color = 'red') +
+                labs(x = "Week",
+                     y = "CO2 Level",
+                     title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model")
+arima.sa.forecast <- co2.weekly.arima.sa %>% 
+                forecast(h = nrow(co2_test)) %>%
+                autoplot(co2_test, color = 'red') + 
+                labs(x = "Week",
+                     y = "CO2 Level",
+                     title = "Out-Of-Sample Seaonally Adjusted ARIMA Model")
 
-forecast_values <- arima.nsa.forecast %>% 
-                  left_join(arima.sa.forecast, by="time_index", suffix=c("_forecast_nsa", "_forecast_sa")) %>%
-                  left_join(poly.sa.forecast, by="time_index")
-out_of_sample_df <- co2_test %>% left_join(forecast_values, by="time_index")
-
-p_outsample_nsa <- out_of_sample_df %>%
-  ggplot(aes(x = time_index)) +
-  geom_line(aes(y = value.x, colour = "NSA Data")) +
-  geom_line(aes(y = .mean_forecast_nsa, colour = "NSA ARIMA")) +
-  # geom_line(aes(y = .mean, colour = "SA Polynomial")) +
-  labs(y = "CO2 Level",
-       title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model")
-
-p_outsample_sa <- out_of_sample_df %>%
-  ggplot(aes(x = time_index)) +
-  geom_line(aes(y = seasonal_adj_value, colour = "SA Data")) +
-  geom_line(aes(y = .mean_forecast_sa, colour = "SA ARIMA")) +
-  # geom_line(aes(y = .mean, colour = "SA Polynomial")) +
-  labs(y = "CO2 Level",
-       title = "Out-Of-Sample Seaonal Adjusted ARIMA Model")
-
-p_outsample_nsa / p_outsample_sa
+arima.nsa.forecast / arima.sa.forecast 
 ```
+
+## (3 points) Task Part 6b: How bad could it get?
+
+With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
+
+
+```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE ,fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
+arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52)
+
+arima_pred %>%
+  autoplot(co2_train) +
+  geom_hline(yintercept = 420, color = "red") +
+  geom_hline(yintercept = 500, color = "red") +
+  labs(x = 'Week', 
+       y = "CO2 Level",
+       title = "Forward Forcast Non-Seaonal Adjusted ARIMA Model")
+```
+
+```{r arima-forecast-ci, echo=FALSE, message=FALSE, warning=FALSE}
+lower <- data.frame(arima_pred) %>%
+  filter(.mean >= 420) %>%
+  head(1)
+
+upper <- data.frame(arima_pred) %>%
+  filter(.mean <= 500) %>%
+  tail(1)
+
+level2122 <- data.frame(arima_pred) %>%
+  filter(year(time_index) == 2122) %>%
+  head(1) 
+
+
+co2_bounds <- dplyr::bind_rows(lower, upper, level2122)
+co2_bounds
+```
+
+> CO2 level will reach 420 by 18th week of 2021, 500 by 34th week of 2056
+> CO2 level will be 668 by 2122
 
 -------------------------
 ```{r ETSDA normal series}
@@ -541,7 +569,3 @@ pacf <- ggPacf(co2_present$diff, ci = 0.95)
 > looks like white noise ...
 
 
-
-## (3 points) Task Part 6b: How bad could it get?
-
-With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
