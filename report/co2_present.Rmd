@@ -169,7 +169,7 @@ co2_present_monthly <- co2_present %>%
 co2_present_ts <- co2_present_monthly %>%
   select(month_index, value) %>%
   as.ts()
-
+# could use geom_boxplot() in ggplot2
 box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
 ```
 > The boxplot is shifted by a month, which could indicate a systematic change?
@@ -312,6 +312,11 @@ resid %>%
   model(stl = STL(arima_resid)) %>%
   components() %>%
   autoplot()
+
+# need to work with model, and then build a test set to work with accuracy()
+# put them as tsibble objects
+
+accuracy()
 ```
 
 
@@ -320,9 +325,9 @@ resid %>%
 Seasonally adjust the weekly NOAA data, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. For both SA and NSA series, fit ARIMA models using all appropriate steps. Measure and discuss how your models perform in-sample and (psuedo-) out-of-sample, comparing candidate models and explaining your choice. In addition, fit a polynomial time-trend model to the seasonally-adjusted series and compare its performance to that of your ARIMA model.
 
 ```{r seasonality-adjusted}
-dcmp_components <- dcmp_add %>% components() 
+dcmp_components <- dcmp_add %>% components()
 co2_enhanced <- co2_enhanced %>%
-                mutate(seasonal_adj_value = dcmp_components$season_adjust)
+  mutate(seasonal_adj_value = dcmp_components$season_adjust)
 
 # plot the annualized growth rate
 p_norm <- co2_enhanced %>%
@@ -330,7 +335,7 @@ p_norm <- co2_enhanced %>%
   aes(x = time_index, y = value) +
   geom_line(color = "steelblue") +
   labs(
-    title = TeX('Atmospheric CO2 Level'),
+    title = TeX("Atmospheric CO2 Level"),
     subtitle = 'The "Keeling Curve"',
     x = "Month and Year",
     y = TeX(r'($CO_2$ Level)')
@@ -342,7 +347,7 @@ p_seasonal_adj <- co2_enhanced %>%
   aes(x = time_index, y = seasonal_adj_value) +
   geom_line(color = "steelblue") +
   labs(
-    title = TeX('Seasonality Adjusted Atmospheric CO2 Level'),
+    title = TeX("Seasonality Adjusted Atmospheric CO2 Level"),
     subtitle = 'The "Keeling Curve"',
     x = "Month and Year",
     y = TeX(r'($CO_2$ Level)')
@@ -354,16 +359,16 @@ p_norm | p_seasonal_adj
 
 ```{r train-test-split}
 co2_train <- co2_enhanced %>%
-        filter(year < 2020)
+  filter(year < 2020)
 co2_test <- co2_enhanced %>%
-        filter(year >= 2020)
+  filter(year >= 2020)
 ```
 
 ```{r estimating-weekly-arima-model}
 # NSA model
 # Have R optimze the best model based on AICc for the seasonal model\
-co2.weekly.arima.nsa <- co2_train %>% 
-                  model(nsa_arima = ARIMA(value, ic = 'aicc'))
+co2.weekly.arima.nsa <- co2_train %>%
+  model(nsa_arima = ARIMA(value, ic = "aicc"))
 
 
 co2.weekly.arima.nsa %>% report()
@@ -372,13 +377,15 @@ co2.weekly.arima.nsa %>% report()
 > ARIMA(0,1,2)(2,1,0)[52] 
 
 ```{r visualzied-fitted-models}
-co2.weekly.arima.sa <- co2_train %>% 
-                  model(sa_arima = ARIMA(seasonal_adj_value ~ 1
-                                      + pdq(0:10, 1, 0:10)
-                                      + PDQ(0, 0, 0),
-                                      ic = 'aicc',
-                                      stepwise=F,
-                                      greedy=F))
+co2.weekly.arima.sa <- co2_train %>%
+  model(sa_arima = ARIMA(
+    seasonal_adj_value ~ 1
+      + pdq(0:10, 1, 0:10)
+      + PDQ(0, 0, 0),
+    ic = "aicc",
+    stepwise = F,
+    greedy = F
+  ))
 
 co2.weekly.arima.sa %>% report()
 ```
@@ -491,26 +498,26 @@ co2_bounds
 # ETSDA
 # plot the series
 series <- co2_train %>%
-            ggplot(aes(x = time_index, y = seasonal_adj_value)) +
-            geom_line() +
-            ggtitle("Atmospheric CO2 Time Series") +
-            xlab("Date") +
-            ylab("CO2 level ppm")
+  ggplot(aes(x = time_index, y = seasonal_adj_value)) +
+  geom_line() +
+  ggtitle("Atmospheric CO2 Time Series") +
+  xlab("Date") +
+  ylab("CO2 level ppm")
 
 # plot of histogram
-histogram <- co2_train %>% 
-            ggplot(aes(x=seasonal_adj_value)) +
-            geom_histogram(color="black", fill="white", binswidth=10) +
-            ggtitle("Atmospheric CO2 Histogram") +
-            xlab("CO2 level ppm")
+histogram <- co2_train %>%
+  ggplot(aes(x = seasonal_adj_value)) +
+  geom_histogram(color = "black", fill = "white", binswidth = 10) +
+  ggtitle("Atmospheric CO2 Histogram") +
+  xlab("CO2 level ppm")
 
 
 # plot acf and pacf
-acf <- ggAcf(co2_train$seasonal_adj_value, level=0.95)
-pacf <- ggPacf(co2_train$seasonal_adj_value, level=0.95)
+acf <- ggAcf(co2_train$seasonal_adj_value, level = 0.95)
+pacf <- ggPacf(co2_train$seasonal_adj_value, level = 0.95)
 
 (series | histogram) /
-(acf | pacf)
+  (acf | pacf)
 ```
 
 
@@ -518,26 +525,26 @@ pacf <- ggPacf(co2_train$seasonal_adj_value, level=0.95)
 # ETSDA
 # plot the series
 series <- co2_train %>%
-            ggplot(aes(x = time_index, y = value)) +
-            geom_line() +
-            ggtitle("Atmospheric CO2 Time Series") +
-            xlab("Date") +
-            ylab("CO2 level ppm")
+  ggplot(aes(x = time_index, y = value)) +
+  geom_line() +
+  ggtitle("Atmospheric CO2 Time Series") +
+  xlab("Date") +
+  ylab("CO2 level ppm")
 
 # plot of histogram
-histogram <- co2_train %>% 
-            ggplot(aes(x=value)) +
-            geom_histogram(color="black", fill="white", binswidth=10) +
-            ggtitle("Atmospheric CO2 Histogram") +
-            xlab("CO2 level ppm")
+histogram <- co2_train %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(color = "black", fill = "white", binswidth = 10) +
+  ggtitle("Atmospheric CO2 Histogram") +
+  xlab("CO2 level ppm")
 
 
 # plot acf and pacf
-acf <- ggAcf(co2_train$value, level=0.95)
-pacf <- ggPacf(co2_train$value, level=0.95)
+acf <- ggAcf(co2_train$value, level = 0.95)
+pacf <- ggPacf(co2_train$value, level = 0.95)
 
 (series | histogram) /
-(acf | pacf)
+  (acf | pacf)
 ```
 
 ```{r first order diff ETSDA plot}
