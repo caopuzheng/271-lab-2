@@ -33,11 +33,18 @@ library(fpp2)
 ```
 
 ## (3 points) Task 0b: Introduction 
-Following up on the 1997 publication on the study on the time-dependent atmospheric $CO_2$ build up. Since then, atmospheric $CO_2$ has increases from 360 to 420 ppm. 
+In our 1997 report, we used the linear models and the ARIMA model to forecast the $CO_2$  level through 2020 and beyond.  We noted the $CO_2$  level increased from 360 ppmv in 1997 to 420 ppmv as of February 2023, which was at the higher end of our forecast interval (385-424 ppmv) at the 95% confidence level.  We plan to compare our 1997 forecast to the monthly actual levels to evaluate the model performance.  We will leverage the learnings to enhance our model performance. 
 
-We are re-evaluating the models and forecasts from the 1997 paper, in an attempt to understand the current state of the atmosphere and the future of $CO_2$ levels.
+While this may not affect our analysis, we noticed that due to the eruption of the Mauna Loa Volcano, measurements from Mauna Loa Observatory were suspended as of Nov. 29, 2022. Observations starting in December 2022 are from a site at the Maunakea Observatories, approximately 21 miles north of the Mauna Loa Observatory. We believe this should not pose a significant impact on the data generation process though.
+
 
 ## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
+
+We sourced the weekly and monthly data set from the United States' National Oceanic and Atmospheric Administration data page [[here](https://gml.noaa.gov/ccgg/trends/data.html)]. We noted 18 observations with -999.99 value (missing values) in the weekly dataset. We replaced the 18 invalid weekly values with their corresponding month’s value in the monthly data set.  Then we generated two clean time series data sets from May 1974 to March 2023: co2_present (weekly frequency) and co2_present_month (monthly frequency).
+
+Similar to our 1997 observations, we continued to see an increasing $CO_2$ level and seasonal variability (see charts in Figure \@ref(fig:CO2-ETSDA) below), however, the trend line steepened after 2005.  The annual growth rates are mostly in the range of 0 to 1% (slightly wider than the 1997 range of 0-0.75%). The  $CO_2$ Decomposition graph continued to show an upward trend, strong seasonality, and the irregular effect.
+
+We noted that the peak $CO_2$ month is April (instead of May in 1997 report) and the lowest month is September (instead of October), The difference between the peak and lowest month is similar ($`r max_min_diff`$ ppmv)    max_min_diff <- max(box$stats[3, ]) - min(box$stats[3, ])
 
 ```{r data-load-pipeline-from-website, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
@@ -86,8 +93,7 @@ co2_present <- co2_present_raw %>%
 # print(end(co2_present$time_index))
 ```
 
-
-```{r time-plot, echo=FALSE, message=FALSE, warning=FALSE}
+```{r time-plot, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present %>%
   ggplot() +
   aes(x = time_index, y = value) +
@@ -151,9 +157,6 @@ p4 <- components(dcmp_add) %>%
 
 (p1 | p2) / (p3 | p4)
 ```
-
-To be able to compare the observed weekly data with model forecasts, which were done using monthly series, we aggregated the weekly data to monthly data by taking all average for all the weeks in a month.
-
 ```{r generate-monthly-indexed-summary, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_monthly <- co2_present %>%
   index_by(month_index = ~ yearmonth(.)) %>%
@@ -164,7 +167,7 @@ co2_present_monthly <- co2_present %>%
   drop_na()
 ```
 
-```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
+```{r boxplot, echo=FALSE, include=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
 # box plot
 co2_present_ts <- co2_present_monthly %>%
   select(month_index, value) %>%
@@ -172,13 +175,14 @@ co2_present_ts <- co2_present_monthly %>%
 # could use geom_boxplot() in ggplot2
 box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
 ```
-> The boxplot is shifted by a month, which could indicate a systematic change?
+
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
+In our 1997 report, we developed the two linear models (one model using time as the single variable, and the other model using the third polynomial degree of trend, and seasonality), and forecasted the $CO_2$ level through 2020 and beyond. We compared the forecast results to our actuals through the present (February 2023).  Both models under-forecasted the $CO_2$ level and performed poorly. The linear model outperformed the polynomial model over the longer term, which is expected based on how third degree polynomials behave. See figure (one with ARIMA).
 
-Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. “Task 2a”). (You do not need to run any formal tests for this task.)
+The linear model with time variable projected a straight trend line (without any seasonal effect) and forecasted $CO_2$ to reach 395 ppmv in February 2023, while the actual level was 420 ppmv. The polynomial model captured the seasonal effect and projected increasing levels until the mid-2021 and then flattened and shifted downward.  The polynomial model forecasted 384 ppmv for February 2023. 
 
-```{r, original-linear-model, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, original-linear-model, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # create a time series for the prediction period
 co2_cutoff <- yearmonth(lubridate::make_date(1998, 1))
 prediction_ts <- co2_present_monthly %>%
@@ -209,15 +213,13 @@ prediction_ts %>%
   geom_line(aes(x = month_index, y = poly_forecast, color = "Polynomial")) +
   labs(
     x = "Month and Year",
-    y = "CO2 Level (ppm)",
+    y = "CO2 Level (ppmv)",
     title = "Model Prediction vs Actual CO2 Level"
   )
 ```
 
 ## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
-
-
-Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present.
+In our 1997 report, we also fitted an ARIMA model (ARIMA(0,1,1)(1,1,2)[12]). This model captured the seasonal effect and projected well until 2005.  The model under-forecasted $CO_2$ levels after 2005. The ARIMA model forecasted 405 ppmv for 2/2023 vs. the actual level of 420 ppmv (figure). The ARIMA model performs much better than the two linear models.
 
 ```{r, original-arima-model, echo=FALSE, message=FALSE, warning=FALSE}
 # original arima model with forecast
@@ -237,24 +239,22 @@ prediction_ts %>%
   geom_line(aes(x = month_index, y = arima_forecast, color = "ARIMA")) +
   labs(
     x = "Month and Year",
-    y = "CO2 Level (ppm)",
+    y = "CO2 Level (ppmv)",
     title = "Model Prediction vs Actual CO2 Level"
   )
 ```
 
 ## (3 points) Task 4b: Evaluate the performance of 1997 linear and ARIMA models 
+In our 1997 report, our ARIMA model projected about the first time that CO2 would cross 420 ppm in May 2031. Sadly we first crossed this level in April 2021, 10 years earlier than our projection.  This is a very concerning trend.
 
-In 1997 you made predictions about the first time that CO2 would cross 420 ppm. How close were your models to the truth? 
+To quantify the model projection errors/biases, we calculated the RMSE of the models.  Among the three models, the ARIMA model has the lowest RSME (8.2), in comparison to the linear model (14.1) and the polynomial model (17.6).
 
-After reflecting on your performance on this threshold-prediction task, continue to use the weekly data to generate a month-average series from 1997 to the present, and compare the overall forecasting performance of your models from Parts 2a and 3b over the entire period. (You should conduct formal tests for this task.) 
 
 ```{r, cross-420-ppm}
 co2_present %>%
   dplyr::filter(value >= 420) %>%
   head(1)
 ```
-
-$CO_2$ crossed 420 ppm in the last week of April 2021. This is 10 years faster than the prediction made by the linear model in 1997. The ARIMA model predicted that $CO_2$ would cross 420 ppm by May 2031.
 
 ```{r, generate-prediction-resid, echo=FALSE, message=FALSE, warning=FALSE}
 resid <- prediction_ts %>%
@@ -294,7 +294,7 @@ resid %>%
   )
 ```
 
-```{r, formal-test-Ljung-Box, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, formal-test-Ljung-Box, include = FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 # use Ljung-Box test to gauge residual stationarity
 
 # Linear model residual
@@ -373,10 +373,8 @@ co2_test <- co2_enhanced %>%
 ```
 
 ```{r estimating-weekly-arima-model}
-# NSA model
-# Have R optimze the best model based on AICc for the seasonal model\
 co2.weekly.arima.nsa <- co2_train %>%
-  model(nsa_arima = ARIMA(value, ic = "aicc"))
+  model(nsa_arima = ARIMA(value, ic = "bic"))
 
 co2.weekly.arima.nsa %>% report()
 ```
@@ -386,13 +384,7 @@ co2.weekly.arima.nsa %>% report()
 ```{r visualzied-fitted-models}
 co2.weekly.arima.sa <- co2_train %>%
   model(sa_arima = ARIMA(
-    seasonal_adj_value ~ 1
-      + pdq(0:10, 1, 0:10)
-      + PDQ(0, 0, 0),
-    ic = "aicc",
-    stepwise = F,
-    greedy = F
-  ))
+    seasonal_adj_value ~ 1 + pdq(0:10, 1, 0:10) + PDQ(0, 0, 0), ic = "bic", stepwise = F, greedy = F))
 
 co2.weekly.arima.sa %>% report()
 ```
@@ -401,12 +393,9 @@ co2.weekly.arima.sa %>% report()
 
 
 ```{r polynomial-sa-fit}
-fit_quadratic_season <- co2_train %>%
-  model(trend_model = TSLM(seasonal_adj_value ~ trend()
-    + I(trend()^2)
-    + I(trend()^3)
-    + season()))
-fit_quadratic_season %>% report()
+fit_cubic_season <- co2_train %>%
+  model(trend_model = TSLM(seasonal_adj_value ~ poly(trend(),3) + season()))
+#fit_quadratic_season %>% report()
 ```
 
 > Using same fit as before
@@ -426,7 +415,9 @@ p_insample_nsa <- in_sample_df %>%
   geom_line(aes(y = .fitted_nsa, colour = "Fitted")) +
   labs(
     y = "CO2 Level",
-    title = "In-Sample Non-Seaonal Adjusted ARIMA Model"
+    title = "In-Sample 
+    Non-Seaonal Adjusted 
+    ARIMA Model"
   )
 
 p_insample_sa <- in_sample_df %>%
@@ -435,7 +426,9 @@ p_insample_sa <- in_sample_df %>%
   geom_line(aes(y = .fitted_sa, colour = "Fitted")) +
   labs(
     y = "CO2 Level",
-    title = "In-Sample Seaonal Adjusted ARIMA Model"
+    title = "In-Sample 
+    Seaonal Adjusted 
+    ARIMA Model"
   )
 
 
@@ -445,40 +438,65 @@ p_insample_poly <- augment(fit_quadratic_season) %>%
   geom_line(aes(y = .fitted, colour = "Fitted")) +
   labs(
     y = "CO2 Level",
-    title = "In-Sample Seasonality Adjusted 3rd Degree Polynomial"
+    title = "In-Sample 
+    Seasonality Adjusted 
+    3rd Degree Polynomial"
   )
 
-p_insample_nsa / p_insample_sa / p_insample_poly
+(p_insample_nsa / p_insample_sa) | p_insample_poly
 ```
 
 ```{r out-of-sample-forecast}
 arima.nsa.forecast <- co2.weekly.arima.nsa %>%
-  forecast(h = nrow(co2_test)) %>%
+  forecast(h = nrow(co2_test), level = c(95)) %>%
   autoplot(co2_test, color = "red") +
   labs(
     x = "Week",
     y = "CO2 Level",
-    title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model"
+    title = "Out-Of-Sample 
+    Non-Seaonal Adjusted 
+    ARIMA Model"
   )
+
 arima.sa.forecast <- co2.weekly.arima.sa %>%
-  forecast(h = nrow(co2_test)) %>%
+  forecast(h = nrow(co2_test), level = c(95)) %>%
   autoplot(co2_test, color = "red") +
   labs(
     x = "Week",
     y = "CO2 Level",
-    title = "Out-Of-Sample Seaonally Adjusted ARIMA Model"
+    title = "Out-Of-Sample 
+    Seaonally Adjusted 
+    ARIMA Model"
   )
 
-arima.nsa.forecast / arima.sa.forecast
-```
+polynomial.sa.forecast <- fit_quadratic_season %>%
+  forecast(h = nrow(co2_test), level = c(95)) %>%
+  autoplot(co2_test, color = "red") +
+  labs(
+    x = "Week",
+    y = "CO2 Level",
+    title = "Out-Of-Sample 
+    Seaonally Adjusted 
+    Polynomial Model"
+  )
 
+(arima.nsa.forecast / arima.sa.forecast) | polynomial.sa.forecast
+```
+```{r compute-rmse}
+arima.nsa.forecast <- co2.weekly.arima.nsa %>%
+  forecast(h = nrow(co2_test), level = c(95))
+
+lm_rmse <- round(sqrt(mean(resid$lm_resid^2)), 1),
+poly_rmse <- round(sqrt(mean(resid$poly_resid^2)), 1),
+arima_rmse <- round(sqrt(mean(resid$arima_resid^2)), 1)
+```
 ## (3 points) Task Part 6b: How bad could it get?
 
 With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
 
 
 ```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
-arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52)
+arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52, level = c(95))
 
 arima_pred %>%
   autoplot(co2_train) +
@@ -506,13 +524,15 @@ level2122 <- data.frame(arima_pred) %>%
 
 
 co2_bounds <- dplyr::bind_rows(lower, upper, level2122)
-co2_bounds
+co2_bounds %>% select(time_index, .mean)
 ```
 
 > CO2 level will reach 420 by 18th week of 2021, 500 by 34th week of 2056
 > CO2 level will be 668 by 2122
 
 -------------------------
+
+
 ```{r ETSDA normal series}
 # ETSDA
 # plot the series
