@@ -39,7 +39,7 @@ We are re-evaluating the models and forecasts from the 1997 paper, in an attempt
 
 ## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
 
-```{r data-load-pipeline-from-website}
+```{r data-load-pipeline-from-website, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
   sep = ",",
   skip = 51
@@ -47,7 +47,7 @@ co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_we
 head(co2_present_raw)
 ```
 
-```{r create-time-component}
+```{r create-time-component, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_raw <- co2_present_raw %>%
   select(year, month, day, average) %>%
   mutate(time_index = yearweek(
@@ -64,7 +64,7 @@ co2_present_raw %>%
   geom_line()
 ```
 
-```{r eda: fill-the-missing-weekly-data-from-monthly}
+```{r eda: fill-the-missing-weekly-data-from-monthly, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_month <- read.csv(
   "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
   sep = ",", skip = 56
@@ -87,7 +87,7 @@ co2_present <- co2_present_raw %>%
 ```
 
 
-```{r time-plot}
+```{r time-plot, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present %>%
   ggplot() +
   aes(x = time_index, y = value) +
@@ -154,7 +154,7 @@ p4 <- components(dcmp_add) %>%
 
 To be able to compare the observed weekly data with model forecasts, which were done using monthly series, we aggregated the weekly data to monthly data by taking all average for all the weeks in a month.
 
-```{r generate-monthly-indexed-summary}
+```{r generate-monthly-indexed-summary, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_monthly <- co2_present %>%
   index_by(month_index = ~ yearmonth(.)) %>%
   summarise(
@@ -178,7 +178,7 @@ box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO
 
 Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. “Task 2a”). (You do not need to run any formal tests for this task.)
 
-```{r, original-linear-model}
+```{r, original-linear-model, echo=FALSE, message=FALSE, warning=FALSE}
 # create a time series for the prediction period
 co2_cutoff <- yearmonth(lubridate::make_date(1998, 1))
 prediction_ts <- co2_present_monthly %>%
@@ -219,7 +219,7 @@ prediction_ts %>%
 
 Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present.
 
-```{r, original-arima-model}
+```{r, original-arima-model, echo=FALSE, message=FALSE, warning=FALSE}
 # original arima model with forecast
 mod.arima <- arima(co2, order = c(0, 1, 1), seasonal = list(order = c(1, 1, 2), period = 12))
 arima_forecast <- forecast::forecast(mod.arima, level = c(95), h = h)
@@ -232,6 +232,7 @@ prediction_ts <- prediction_ts %>% add_column(
 prediction_ts %>%
   ggplot() +
   geom_line(aes(x = month_index, y = value, color = "Actual")) +
+  geom_line(aes(x = month_index, y = lm_forecast, color = "Linear")) +
   geom_line(aes(x = month_index, y = poly_forecast, color = "Polynomial")) +
   geom_line(aes(x = month_index, y = arima_forecast, color = "ARIMA")) +
   labs(
@@ -255,28 +256,33 @@ co2_present %>%
 
 $CO_2$ crossed 420 ppm in the last week of April 2021. This is 10 years faster than the prediction made by the linear model in 1997. The ARIMA model predicted that $CO_2$ would cross 420 ppm by May 2031.
 
-```{r, generate-prediction-resid}
+```{r, generate-prediction-resid, echo=FALSE, message=FALSE, warning=FALSE}
 resid <- prediction_ts %>%
   mutate(
+    lm_resid = value - lm_forecast,
     poly_resid = value - poly_forecast,
     arima_resid = value - arima_forecast
   ) %>%
-  select(month_index, poly_resid, arima_resid)
+  select(month_index, lm_resid, poly_resid, arima_resid)
 
 # filter the last value for RMSE, display the RMSE in ggplot
 resid_last <- resid %>%
   filter(month_index == max(month_index)) %>%
   mutate(
+    lm_resid = lm_resid + 0.5,
     poly_resid = poly_resid + 0.5,
     arima_resid = arima_resid + 1
   ) %>%
   add_column(
+    lm_rmse = round(sqrt(mean(resid$lm_resid^2)), 1),
     poly_rmse = round(sqrt(mean(resid$poly_resid^2)), 1),
     arima_rmse = round(sqrt(mean(resid$arima_resid^2)), 1)
   )
 
 resid %>%
   ggplot() +
+  geom_line(aes(x = month_index, y = lm_resid, color = "Linear")) +
+  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last) +
   geom_line(aes(x = month_index, y = poly_resid, color = "Polynomial")) +
   geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last) +
   geom_line(aes(x = month_index, y = arima_resid, color = "ARIMA")) +
@@ -288,8 +294,15 @@ resid %>%
   )
 ```
 
-```{r, formal-test-Ljung-Box}
+```{r, formal-test-Ljung-Box, echo=FALSE, message=FALSE, warning=FALSE}
 # use Ljung-Box test to gauge residual stationarity
+
+# Linear model residual
+resid %>%
+  select(lm_resid) %>%
+  as.ts() %>%
+  Box.test(lag = 10, type = "Ljung-Box")
+
 
 # Polynomial model residual
 resid %>%
@@ -297,10 +310,10 @@ resid %>%
   as.ts() %>%
   Box.test(lag = 10, type = "Ljung-Box")
 
-resid %>%
-  model(stl = STL(poly_resid)) %>%
-  components() %>%
-  autoplot()
+# resid %>%
+#   model(stl = STL(poly_resid)) %>%
+#   components() %>%
+#   autoplot()
 
 # ARIMA model residual
 resid %>%
@@ -308,15 +321,10 @@ resid %>%
   as.ts() %>%
   Box.test(lag = 10, type = "Ljung-Box")
 
-resid %>%
-  model(stl = STL(arima_resid)) %>%
-  components() %>%
-  autoplot()
-
-# need to work with model, and then build a test set to work with accuracy()
-# put them as tsibble objects
-
-accuracy()
+# resid %>%
+#   model(stl = STL(arima_resid)) %>%
+#   components() %>%
+#   autoplot()
 ```
 
 
@@ -370,7 +378,6 @@ co2_test <- co2_enhanced %>%
 co2.weekly.arima.nsa <- co2_train %>%
   model(nsa_arima = ARIMA(value, ic = "aicc"))
 
-
 co2.weekly.arima.nsa %>% report()
 ```
 
@@ -390,15 +397,15 @@ co2.weekly.arima.sa <- co2_train %>%
 co2.weekly.arima.sa %>% report()
 ```
 
-> Since the searies is sesonally adjusted, westimated this to be ARIMA(2,1,3)
+> Since the searies is sesonally adjusted, we estimated this to be ARIMA(2,1,3)
 
 
 ```{r polynomial-sa-fit}
 fit_quadratic_season <- co2_train %>%
-  model(trend_model = TSLM(seasonal_adj_value ~ trend() 
-                                              + I(trend()^2) 
-                                              + I(trend()^3) 
-                                              + season()))
+  model(trend_model = TSLM(seasonal_adj_value ~ trend()
+    + I(trend()^2)
+    + I(trend()^3)
+    + season()))
 fit_quadratic_season %>% report()
 ```
 
@@ -409,50 +416,60 @@ fit_quadratic_season %>% report()
 nsa.fitted <- co2.weekly.arima.nsa %>% fitted.values()
 sa.fitted <- co2.weekly.arima.sa %>% fitted.values()
 
-fitted_values <- nsa.fitted %>% left_join(sa.fitted, by="time_index", suffix=c("_nsa", "_sa"))
-in_sample_df <- co2_train %>% left_join(fitted_values, by="time_index")
+fitted_values <- nsa.fitted %>% left_join(sa.fitted, by = "time_index", suffix = c("_nsa", "_sa"))
+in_sample_df <- co2_train %>% left_join(fitted_values, by = "time_index")
 
 
 p_insample_nsa <- in_sample_df %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = value, colour = "Data")) +
   geom_line(aes(y = .fitted_nsa, colour = "Fitted")) +
-  labs(y = "CO2 Level",
-       title = "In-Sample Non-Seaonal Adjusted ARIMA Model")
+  labs(
+    y = "CO2 Level",
+    title = "In-Sample Non-Seaonal Adjusted ARIMA Model"
+  )
 
 p_insample_sa <- in_sample_df %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
   geom_line(aes(y = .fitted_sa, colour = "Fitted")) +
-  labs(y = "CO2 Level",
-       title = "In-Sample Seaonal Adjusted ARIMA Model")
+  labs(
+    y = "CO2 Level",
+    title = "In-Sample Seaonal Adjusted ARIMA Model"
+  )
 
 
-p_insample_poly <- augment(fit_quadratic_season)%>%
+p_insample_poly <- augment(fit_quadratic_season) %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
   geom_line(aes(y = .fitted, colour = "Fitted")) +
-  labs(y = "CO2 Level",
-       title = "In-Sample Seasonality Adjusted 3rd Degree Polynomial")
+  labs(
+    y = "CO2 Level",
+    title = "In-Sample Seasonality Adjusted 3rd Degree Polynomial"
+  )
 
 p_insample_nsa / p_insample_sa / p_insample_poly
 ```
 
 ```{r out-of-sample-forecast}
-arima.nsa.forecast <- co2.weekly.arima.nsa %>% 
-                forecast(h = nrow(co2_test)) %>%
-                autoplot(co2_test, color = 'red') +
-                labs(x = "Week",
-                     y = "CO2 Level",
-                     title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model")
-arima.sa.forecast <- co2.weekly.arima.sa %>% 
-                forecast(h = nrow(co2_test)) %>%
-                autoplot(co2_test, color = 'red') + 
-                labs(x = "Week",
-                     y = "CO2 Level",
-                     title = "Out-Of-Sample Seaonally Adjusted ARIMA Model")
+arima.nsa.forecast <- co2.weekly.arima.nsa %>%
+  forecast(h = nrow(co2_test)) %>%
+  autoplot(co2_test, color = "red") +
+  labs(
+    x = "Week",
+    y = "CO2 Level",
+    title = "Out-Of-Sample Non-Seaonal Adjusted ARIMA Model"
+  )
+arima.sa.forecast <- co2.weekly.arima.sa %>%
+  forecast(h = nrow(co2_test)) %>%
+  autoplot(co2_test, color = "red") +
+  labs(
+    x = "Week",
+    y = "CO2 Level",
+    title = "Out-Of-Sample Seaonally Adjusted ARIMA Model"
+  )
 
-arima.nsa.forecast / arima.sa.forecast 
+arima.nsa.forecast / arima.sa.forecast
 ```
 
 ## (3 points) Task Part 6b: How bad could it get?
@@ -460,16 +477,18 @@ arima.nsa.forecast / arima.sa.forecast
 With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
 
 
-```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE ,fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
+```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
 arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52)
 
 arima_pred %>%
   autoplot(co2_train) +
   geom_hline(yintercept = 420, color = "red") +
   geom_hline(yintercept = 500, color = "red") +
-  labs(x = 'Week', 
-       y = "CO2 Level",
-       title = "Forward Forcast Non-Seaonal Adjusted ARIMA Model")
+  labs(
+    x = "Week",
+    y = "CO2 Level",
+    title = "Forward Forcast Non-Seaonal Adjusted ARIMA Model"
+  )
 ```
 
 ```{r arima-forecast-ci, echo=FALSE, message=FALSE, warning=FALSE}
@@ -483,7 +502,7 @@ upper <- data.frame(arima_pred) %>%
 
 level2122 <- data.frame(arima_pred) %>%
   filter(year(time_index) == 2122) %>%
-  head(1) 
+  head(1)
 
 
 co2_bounds <- dplyr::bind_rows(lower, upper, level2122)
