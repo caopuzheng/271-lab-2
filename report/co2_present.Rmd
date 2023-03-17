@@ -336,6 +336,9 @@ For both SA and NSA series, the present co2 dataset shows some similar character
 
 ```{r seasonality-adjusted}
 dcmp_components <- dcmp_add %>% components()
+
+dcmp_components
+
 co2_enhanced <- co2_enhanced %>%
   mutate(seasonal_adj_value = dcmp_components$season_adjust,
          seasonal_value = dcmp_components$season_year)
@@ -365,7 +368,22 @@ p_seasonal_adj <- co2_enhanced %>%
   ) +
   theme(plot.title = element_text(size = 10))
 
-p_norm | p_seasonal_adj
+
+p_seasonal <- co2_enhanced %>%
+  ggplot() +
+  aes(x = time_index, y = seasonal_value) +
+  geom_line(color = "steelblue") +
+  labs(
+    title = TeX("Seasonality Adjusted Atmospheric CO2 Level"),
+    subtitle = 'The "Keeling Curve"',
+    x = "Month and Year",
+    y = TeX(r'($CO_2$ Level)')
+  ) +
+  theme(plot.title = element_text(size = 10))
+
+
+p_norm | p_seasonal_adj /
+p_seasonal
 ```
 
 ```{r train-test-split}
@@ -411,7 +429,6 @@ sa.fitted <- co2.weekly.arima.sa %>% fitted.values()
 fitted_values <- nsa.fitted %>% left_join(sa.fitted, by = "time_index", suffix = c("_nsa", "_sa"))
 in_sample_df <- co2_train %>% left_join(fitted_values, by = "time_index")
 
-
 p_insample_nsa <- in_sample_df %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = value, colour = "Data")) +
@@ -425,8 +442,8 @@ p_insample_nsa <- in_sample_df %>%
 
 p_insample_sa <- in_sample_df %>%
   ggplot(aes(x = time_index)) +
-  geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
-  geom_line(aes(y = .fitted_sa, colour = "Fitted")) +
+  geom_line(aes(y = value, colour = "Data")) +
+  geom_line(aes(y = .fitted_sa+co2_train$seasonal_value, colour = "Fitted")) +
   labs(
     y = "CO2 Level",
     title = "In-Sample 
@@ -437,8 +454,8 @@ p_insample_sa <- in_sample_df %>%
 
 p_insample_poly <- augment(fit_cubic_season) %>%
   ggplot(aes(x = time_index)) +
-  geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
-  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  geom_line(aes(y = co2_train$value, colour = "Data")) +
+  geom_line(aes(y = .fitted+co2_train$seasonal_value, colour = "Fitted")) +
   labs(
     y = "CO2 Level",
     title = "In-Sample 
@@ -452,53 +469,93 @@ p_insample_poly <- augment(fit_cubic_season) %>%
 ```{r out-of-sample-forecast}
 arima.nsa.forecast <- co2.weekly.arima.nsa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
-  autoplot(co2_test, color = "red") +
+  mutate(actual_level = co2_test$value)
+
+arima.sa.forecast <- co2.weekly.arima.sa %>%
+  forecast(h = nrow(co2_test), level = c(95)) %>%
+  mutate(.mean = .mean + co2_test$seasonal_value,
+         actual_level = co2_test$value)
+
+
+polynomial.sa.forecast <- fit_cubic_season %>%
+  forecast(h = nrow(co2_test), level = c(95)) %>%
+    mutate(.mean = .mean + co2_test$seasonal_value,
+         actual_level = co2_test$value)
+
+
+arima.nsa.forecast.plot <- arima.nsa.forecast %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = actual_level, colour = "Data")) +
+  geom_line(aes(y = .mean, colour = "Fitted")) +
   labs(
     x = "Week",
     y = "CO2 Level",
-    title = "Out-Of-Sample 
+    title = "Out-of-Sample 
     Non-Seaonal Adjusted 
     ARIMA Model"
   )
 
-arima.sa.forecast <- co2.weekly.arima.sa %>%
-  forecast(h = nrow(co2_test), level = c(95)) %>%
-  autoplot(co2_test, color = "red") +
+arima.sa.forecast.plot <- arima.sa.forecast %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = actual_level, colour = "Data")) +
+  geom_line(aes(y = .mean, colour = "Fitted")) +
   labs(
-    x = "Week",
     y = "CO2 Level",
-    title = "Out-Of-Sample 
-    Seaonally Adjusted 
+    title = "Out-of-Sample 
+    Seaonal Adjusted 
     ARIMA Model"
   )
 
-polynomial.sa.forecast <- fit_cubic_season %>%
-  forecast(h = nrow(co2_test), level = c(95)) %>%
-  autoplot(co2_test, color = "red") +
+polynomial.sa.forecast.plot <- polynomial.sa.forecast %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = actual_level, colour = "Data")) +
+  geom_line(aes(y = .mean, colour = "Fitted")) +
   labs(
     x = "Week",
     y = "CO2 Level",
-    title = "Out-Of-Sample 
-    Seaonally Adjusted 
+    title = "Out-of-Sample
+    Seaonally Adjusted
     Polynomial Model"
   )
 
-(arima.nsa.forecast / arima.sa.forecast) | polynomial.sa.forecast
+
+# arima.nsa.forecast.plot <- arima.nsa.forecast %>%
+#   autoplot(co2_test, color = "red") +
+#   labs(
+#     x = "Week",
+#     y = "CO2 Level",
+#     title = "Out-Of-Sample 
+#     Non-Seaonal Adjusted 
+#     ARIMA Model"
+#   )
+# arima.sa.forecast.plot <- arima.sa.forecast %>%
+#   autoplot(color = "red") +
+#   labs(
+#     x = "Week",
+#     y = "CO2 Level",
+#     title = "Out-Of-Sample 
+#     Seaonally Adjusted 
+#     ARIMA Model"
+#   )
+# 
+# polynomial.sa.forecast.plot <- polynomial.sa.forecast %>%
+#   autoplot(co2_test, color = "red") +
+#   labs(
+#     x = "Week",
+#     y = "CO2 Level",
+#     title = "Out-Of-Sample 
+#     Seaonally Adjusted 
+#     Polynomial Model"
+#   )
+
+
+
+(arima.nsa.forecast.plot / arima.sa.forecast.plot) | polynomial.sa.forecast.plot
 ```
 ```{r compute-rmse}
-arima.nsa.forecast <- co2.weekly.arima.nsa %>%
-  forecast(h = nrow(co2_test), level = c(95))
-
-arima.sa.forecast <- co2.weekly.arima.sa %>%
-  forecast(h = nrow(co2_test), level = c(95))
-
-polynomial.sa.forecast <- fit_cubic_season %>%
-  forecast(h = nrow(co2_test), level = c(95))
-
-
 arima_nsa_rmse <- round(sqrt(mean((co2_test$value - arima.nsa.forecast$.mean)^2)),3)
-arima_sa_rmse <-  round(sqrt(mean((co2_test$seasonal_adj_value - arima.sa.forecast$.mean)^2)),3)
-poly_sa_rmse <-  round(sqrt(mean((co2_test$seasonal_adj_value - polynomial.sa.forecast$.mean)^2)),3)
+arima_sa_rmse <-  round(sqrt(mean((co2_test$value - arima.sa.forecast$.mean)^2)),3)
+poly_sa_rmse <-  round(sqrt(mean((co2_test$value - polynomial.sa.forecast$.mean)^2)),3)
 
 
 RMSE <- data.frame(arima_nsa_resid = arima_nsa_rmse,
