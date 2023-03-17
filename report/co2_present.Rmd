@@ -396,8 +396,8 @@ co2.weekly.arima.sa %>% report()
 
 ```{r polynomial-sa-fit}
 fit_cubic_season <- co2_train %>%
-  model(trend_model = TSLM(seasonal_adj_value ~ poly(trend(),3) + season()))
-#fit_quadratic_season %>% report()
+  model(trend_model = TSLM(seasonal_adj_value ~ trend() + I(trend()^2) + I(trend()^3) + season()))
+#fit_cubic_season %>% report()
 ```
 
 > Using same fit as before
@@ -434,7 +434,7 @@ p_insample_sa <- in_sample_df %>%
   )
 
 
-p_insample_poly <- augment(fit_quadratic_season) %>%
+p_insample_poly <- augment(fit_cubic_season) %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = seasonal_adj_value, colour = "Data")) +
   geom_line(aes(y = .fitted, colour = "Fitted")) +
@@ -471,7 +471,7 @@ arima.sa.forecast <- co2.weekly.arima.sa %>%
     ARIMA Model"
   )
 
-polynomial.sa.forecast <- fit_quadratic_season %>%
+polynomial.sa.forecast <- fit_cubic_season %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   autoplot(co2_test, color = "red") +
   labs(
@@ -485,12 +485,26 @@ polynomial.sa.forecast <- fit_quadratic_season %>%
 (arima.nsa.forecast / arima.sa.forecast) | polynomial.sa.forecast
 ```
 ```{r compute-rmse}
-# arima.nsa.forecast <- co2.weekly.arima.nsa %>%
-#   forecast(h = nrow(co2_test), level = c(95))
-# 
-# lm_rmse <- round(sqrt(mean(resid$lm_resid^2)), 1),
-# poly_rmse <- round(sqrt(mean(resid$poly_resid^2)), 1),
-# arima_rmse <- round(sqrt(mean(resid$arima_resid^2)), 1)
+arima.nsa.forecast <- co2.weekly.arima.nsa %>%
+  forecast(h = nrow(co2_test), level = c(95))
+
+arima.sa.forecast <- co2.weekly.arima.sa %>%
+  forecast(h = nrow(co2_test), level = c(95))
+
+polynomial.sa.forecast <- fit_cubic_season %>%
+  forecast(h = nrow(co2_test), level = c(95))
+
+
+arima_nsa_rmse <- round(sqrt(mean((co2_test$value - arima.nsa.forecast$.mean)^2)),3)
+arima_sa_rmse <-  round(sqrt(mean((co2_test$seasonal_adj_value - arima.sa.forecast$.mean)^2)),3)
+poly_sa_rmse <-  round(sqrt(mean((co2_test$seasonal_adj_value - polynomial.sa.forecast$.mean)^2)),3)
+
+
+RMSE <- data.frame(arima_nsa_resid = arima_nsa_rmse,
+                    arima_sa_resid = arima_sa_rmse,
+                    poly_sa_resid = poly_sa_rmse)
+
+RMSE
 ```
 ## (3 points) Task Part 6b: How bad could it get?
 
