@@ -337,7 +337,8 @@ For both SA and NSA series, the present co2 dataset shows some similar character
 ```{r seasonality-adjusted}
 dcmp_components <- dcmp_add %>% components()
 co2_enhanced <- co2_enhanced %>%
-  mutate(seasonal_adj_value = dcmp_components$season_adjust)
+  mutate(seasonal_adj_value = dcmp_components$season_adjust,
+         seasonal_value = dcmp_components$season_year)
 
 # plot the annualized growth rate
 p_norm <- co2_enhanced %>%
