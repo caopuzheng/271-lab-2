@@ -463,8 +463,7 @@ resid_out_sample <- resid_out_sample %>% add_column(
 polynomial.sa.resid <- fit_cubic_season %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("polynomial_sa_forecast" = ".mean") %>%
-  mutate(polynomial_nsa_resid = co2_test$value - polynomial_sa_forecast - co2_test$seasonal_value) %>%
-  select(time_index, polynomial_nsa_resid)
+  mutate(polynomial_nsa_resid = co2_test$value - polynomial_sa_forecast - co2_test$seasonal_value)
 
 resid_out_sample <- resid_out_sample %>% add_column(
   polynomial_nsa_resid = polynomial.sa.resid$polynomial_nsa_resid
@@ -483,9 +482,9 @@ resid_out_sample %>%
 ```
 
 ```{r compute-rmse, echo=FALSE, message=FALSE, warning=FALSE}
-arima_nsa_rmse <- round(sqrt(mean((co2_test$value - arima.nsa.forecast$.mean)^2)), 3)
-arima_sa_rmse <- round(sqrt(mean((co2_test$value - arima.sa.forecast$.mean)^2)), 3)
-poly_sa_rmse <- round(sqrt(mean((co2_test$value - polynomial.sa.forecast$.mean)^2)), 3)
+arima_nsa_rmse <- round(sqrt(mean(resid_out_sample$arima_nsa_resid^2)), 3)
+arima_sa_rmse <- round(sqrt(mean(resid_out_sample$arima_sa_resid^2)), 3)
+poly_sa_rmse <- round(sqrt(mean(resid_out_sample$polynomial_nsa_resid^2)), 3)
 
 
 RMSE <- data.frame(
