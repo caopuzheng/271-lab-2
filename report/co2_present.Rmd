@@ -43,20 +43,16 @@ We sourced the weekly and monthly data set from the United States' National Ocea
 
 
 ```{r data-load-pipeline-from-website, echo=FALSE, message=FALSE, warning=FALSE}
-# Developed the data pipeline to source weekly data from the NOAA site
-
+# # Load weekly data, and save the raw data for future use
 # co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
 #   sep = ",",
 #   skip = 51
 # )
-# head(co2_present_raw)
-```
-```{r include=FALSE}
-# To present data lost when the NOAA website is down, we also downloaded the csv file from the NOAA site 
-co2_present_raw <- read.csv(file = "C:\\Users\\lisaw\\Desktop\\MIDS_class\\w271\\Lab_2\\271_team_lab_2\\co2_weekly_mlo.csv",
-                            sep = ",",
-                            skip = 51)
+# write.csv(co2_present_raw, "co2_present_raw.csv", row.names = FALSE)
 
+co2_present_raw <- read.csv("report/co2_present_raw.csv")
+
+head(co2_present_raw)
 ```
 
 
@@ -78,15 +74,14 @@ co2_present_raw %>%
 ```
 
 ```{r eda: fill-the-missing-weekly-data-from-monthly, echo=FALSE, message=FALSE, warning=FALSE}
+# # Load monthly data, and save the raw data for future use
 # co2_present_month <- read.csv(
 #   "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
 #   sep = ",", skip = 56
 # )
-# TO UPDATE
-co2_present_month <- read.csv(
-  "C:\\Users\\lisaw\\Desktop\\MIDS_class\\w271\\Lab_2\\271_team_lab_2\\co2_mm_mlo.csv",
-  sep = ",", skip = 56
-)
+# write.csv(co2_present_month, "report/co2_present_month.csv", row.names = FALSE)
+
+co2_present_month <- read.csv("report/co2_present_month.csv")
 
 # remove outliers and replace with monthly average
 co2_present_raw <- co2_present_raw %>%
