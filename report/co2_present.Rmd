@@ -97,7 +97,6 @@ co2_present <- co2_present_raw %>%
 # print(sum(is.na(co2_present)))
 # print(start(co2_present$time_index))
 # print(end(co2_present$time_index))
-
 ```
 
 ```{r time-plot, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
@@ -140,7 +139,8 @@ p1 <- components(dcmp_add) %>%
 p2 <- co2_present_enhanced %>%
   ggplot() +
   aes(x = time_index, y = annual_growth) +
-  geom_line(color = "steelblue") + geom_smooth(method = "lm", color='black') +
+  geom_line(color = "steelblue") +
+  geom_smooth(method = "lm", color = "black") +
   labs(
     title = TeX(r'(Annualized Growth $CO_2$)'),
     subtitle = 'The "Keeling Curve"',
@@ -166,8 +166,7 @@ p4 <- components(dcmp_add) %>%
 ```
 
 ```{r, include=FALSE }
-mean_growth_rate <- round(mean(co2_present_enhanced$annual_growth, na.rm=TRUE),3)
-
+mean_growth_rate <- round(mean(co2_present_enhanced$annual_growth, na.rm = TRUE), 3)
 ```
 
 Similar to our 1997 observations, there is an increasing $CO_2$ trend and seasonal variability in the data set. See charts in Figure \@ref(fig:CO2-ETSDA). However, the trend line seems to steepen in after mid-2000s. The annual growth rates are mostly in the range of 0 to 1%, with a modest upward trend (also observed in 1997). We noticed that the long run average of the annual growth rates now is $`r mean_growth_rate`$%, higher than the prior long run average of annual growth rate of 0.37% in the 1997 data set. This further confirms that $CO_2$ levels increased faster in the recent years. The $CO_2$ Decomposition graph continued to show an upward trend, strong seasonality, and the irregular effect.
@@ -191,7 +190,6 @@ co2_present_ts <- co2_present_monthly %>%
 box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppmv)", main = "Monthly Mean CO2"))
 
 max_min_diff <- max(box$stats[3, ]) - min(box$stats[3, ])
-
 ```
 We also noted that the peak $CO_2$ month is April (instead of May in the 1997 report) and the lowest month is September (instead of October). The seasonal difference between the peak and trough month is ($`r max_min_diff`$ ppmv), similar to the 1997 observation.  
 
@@ -235,10 +233,8 @@ arima_forecast <- forecast::forecast(mod.arima, level = c(95), h = h)
 prediction_ts <- prediction_ts %>% add_column(
   arima_forecast = arima_forecast$mean
 )
-
 ```
 ```{r, forecast-compare-RSME, echo=FALSE, message=FALSE, warning=FALSE, out.width="75%", fig.cap="Model Prediction vs Actual (Left) and Model Prediction Biases (Right)"}
-
 # visualize the forecast vs the actual
 predict_compare <- prediction_ts %>%
   ggplot() +
@@ -250,13 +246,18 @@ predict_compare <- prediction_ts %>%
     x = "Month and Year",
     y = "CO2 Level (ppmv)",
     title = "Model Prediction vs Actual CO2 Level"
-  ) + theme(legend.position="bottom",
-            legend.text = element_text(colour="blue", size=8, 
-                                     face="bold"),
-            axis.title=element_text(size=10,face="bold"),
-            plot.title = element_text(size=12,face="bold"))
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(
+      colour = "blue", size = 8,
+      face = "bold"
+    ),
+    axis.title = element_text(size = 10, face = "bold"),
+    plot.title = element_text(size = 12, face = "bold")
+  )
 
-#The following chart answers Task 4b: Evaluate model performance
+# The following chart answers Task 4b: Evaluate model performance
 
 # calculate RSME of the forecast errors of each model
 resid <- prediction_ts %>%
@@ -279,27 +280,31 @@ resid_last <- resid %>%
     lm_rmse = round(sqrt(mean(resid$lm_resid^2)), 1),
     poly_rmse = round(sqrt(mean(resid$poly_resid^2)), 1),
     arima_rmse = round(sqrt(mean(resid$arima_resid^2)), 1)
-  ) 
+  )
 
-#plot the residuals and display the RSME value at the end of each curve
+# plot the residuals and display the RSME value at the end of each curve
 resid_plot <- resid %>%
   ggplot() +
   geom_line(aes(x = month_index, y = lm_resid, color = "Linear")) +
-  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last, size=3, hjust = +1) +
+  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last, size = 3, hjust = +1) +
   geom_line(aes(x = month_index, y = poly_resid, color = "Polynomial")) +
-  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last, size=3, hjust = +1) +
+  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last, size = 3, hjust = +1) +
   geom_line(aes(x = month_index, y = arima_resid, color = "ARIMA")) +
-  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data =resid_last, size=3, hjust = +1) +
+  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last, size = 3, hjust = +1) +
   labs(
     x = "Month and Year",
     y = "CO2 Level (ppmv)",
     title = "Model Prediction Biases"
-  ) + 
-  theme(legend.position="bottom", 
-        legend.text = element_text(colour="blue", size=8, 
-                                     face="bold"), 
-        axis.title=element_text(size=10,face="bold"),
-        plot.title = element_text(size=12,face="bold"))
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(
+      colour = "blue", size = 8,
+      face = "bold"
+    ),
+    axis.title = element_text(size = 10, face = "bold"),
+    plot.title = element_text(size = 12, face = "bold")
+  )
 
 
 predict_compare | resid_plot
@@ -319,7 +324,7 @@ co2_present %>%
 ```
 
 ```{r, generate-prediction-resid, echo=FALSE, message=FALSE, warning=FALSE, out.width="65%", include=FALSE}
-#This part was already included in Task 3b above
+# This part was already included in Task 3b above
 resid <- prediction_ts %>%
   mutate(
     lm_resid = value - lm_forecast,
@@ -345,11 +350,11 @@ resid_last <- resid %>%
 resid %>%
   ggplot() +
   geom_line(aes(x = month_index, y = lm_resid, color = "Linear")) +
-  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last, size=2.5) +
+  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last, size = 2.5) +
   geom_line(aes(x = month_index, y = poly_resid, color = "Polynomial")) +
-  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last, size=2.5) +
+  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last, size = 2.5) +
   geom_line(aes(x = month_index, y = arima_resid, color = "ARIMA")) +
-  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last, size=2.5) +
+  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last, size = 2.5) +
   labs(
     x = "Month and Year",
     y = "CO2 Level (ppmv)",
@@ -358,7 +363,7 @@ resid %>%
 ```
 
 ```{r, formal-test-Ljung-Box, include = FALSE, echo=FALSE, message=FALSE, warning=FALSE}
-#This section is not required for Task 4b
+# This section is not required for Task 4b
 # use Ljung-Box test to gauge residual stationarity
 
 # Linear model residual
@@ -448,11 +453,10 @@ p_seasonal <- co2_present_enhanced %>%
 
 
 p_norm / p_seasonal_adj
-
 ```
 
 ```{r train-test-split, echo=FALSE, message=FALSE, warning=FALSE}
-#split the series into training and test sets, using the last two years of observations as the test sets
+# split the series into training and test sets, using the last two years of observations as the test sets
 co2_train <- co2_present_enhanced %>%
   filter(year < 2020)
 co2_test <- co2_present_enhanced %>%
@@ -507,7 +511,7 @@ resid_values <- nsa.resid %>%
     "poly_resid" = ".resid"
   )
 
-#plot the in sample errors for all three models
+# plot the in sample errors for all three models
 plot_in_sample <- resid_values %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = nsa_resid, colour = "Non-Seaonal Adj ARIMA")) +
@@ -517,7 +521,6 @@ plot_in_sample <- resid_values %>%
     y = "CO2 Level",
     title = "In-Sample Model Residual"
   )
-
 ```
 
 We performed diagnostic analysis of the model residuals to check for residuals stationarity and any assumption violations.  The two ARIMA models have stationary residuals and a normal distribution of the residuals, with a couple of significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which require data transformation to detrend and refit.
@@ -575,7 +578,7 @@ resid_out_sample <- resid_out_sample %>% add_column(
   polynomial_nsa_resid = polynomial.sa.resid$polynomial_nsa_resid
 )
 
-#plot the error plots for out-of-sample projections
+# plot the error plots for out-of-sample projections
 plot_out_sample <- resid_out_sample %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = arima_nsa_resid, colour = "Non-Seaonal Adj ARIMA")) +
@@ -589,23 +592,28 @@ plot_out_sample <- resid_out_sample %>%
 ```
 
 ```{r, in-out-sample-error-plot, fig.cap="In-Sample Model Residuals (Left) Out-Sample Model Residuals (Right)", out.width="75%", echo=FALSE}
-#plot in-sample model residuals for all three models
+# plot in-sample model residuals for all three models
 plot_in_sample <- resid_values %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = nsa_resid, colour = "NSA ARIMA")) +
   geom_line(aes(y = sa_resid, colour = "SA ARIMA")) +
   geom_line(aes(y = poly_resid, colour = "SA Poly")) +
-  labs(x = "Week",
+  labs(
+    x = "Week",
     y = "CO2 Level",
     title = "In-Sample Model Residual"
-  )+ 
-  theme(legend.position="bottom", 
-        legend.text = element_text(colour="blue", size=8, 
-                                     face="bold"), 
-        axis.title=element_text(size=10,face="bold"),
-        plot.title = element_text(size=10,face="bold")) 
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(
+      colour = "blue", size = 8,
+      face = "bold"
+    ),
+    axis.title = element_text(size = 10, face = "bold"),
+    plot.title = element_text(size = 10, face = "bold")
+  )
 
-#plot in-sample model residuals for all three models
+# plot in-sample model residuals for all three models
 plot_out_sample <- resid_out_sample %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = arima_nsa_resid, colour = "NSA ARIMA")) +
@@ -615,12 +623,16 @@ plot_out_sample <- resid_out_sample %>%
     x = "Week",
     y = "CO2 Level",
     title = "Out-of-Sample Model"
-  )+ 
-  theme(legend.position="bottom", 
-        legend.text = element_text(colour="blue", size=8, 
-                                     face="bold"), 
-        axis.title=element_text(size=10,face="bold"),
-        plot.title = element_text(size=10,face="bold")) 
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(
+      colour = "blue", size = 8,
+      face = "bold"
+    ),
+    axis.title = element_text(size = 10, face = "bold"),
+    plot.title = element_text(size = 10, face = "bold")
+  )
 
 plot_in_sample | plot_out_sample
 ```
@@ -628,19 +640,19 @@ plot_in_sample | plot_out_sample
 We calculated each model’s RSME for in-sample and out-of-sample periods, see the table below. The ARIMA Seasonal model has the lowest RSME for the in-sample periods, and the ARIMA Non-Seasonal model has the lowest RSME for the out-of-sample periods.  Out-of-sample period performance is more important, given the unseen data. We concluded that the ARIMA Non-Seasonal model is the best model for this data set.
 
 ```{r compute-rmse, echo=FALSE, message=FALSE, warning=FALSE}
-#calculate the RSME for out-of-sample errors
+# calculate the RSME for out-of-sample errors
 arima_nsa_rmse <- round(sqrt(mean(resid_out_sample$arima_nsa_resid^2)), 3)
 arima_sa_rmse <- round(sqrt(mean(resid_out_sample$arima_sa_resid^2)), 3)
 poly_sa_rmse <- round(sqrt(mean(resid_out_sample$polynomial_nsa_resid^2)), 3)
 
-#general a combined table for both in-sample and out-of-sample RSME for the three models
+# general a combined table for both in-sample and out-of-sample RSME for the three models
 RMSE <- data.frame(
   model = c("ARIMA Non-Seasonal", "ARIMA Seasonal", "Polynomial Seasonal"),
   RMSE_In_Sample = c(arima_nsa_rmse_in, arima_sa_rmse_in, poly_sa_rmse_in),
   RMSE_Out_Sample = c(arima_nsa_rmse, arima_sa_rmse, poly_sa_rmse)
 )
 
-#Generate a table for both in-sample and out-sample RMSE
+# Generate a table for both in-sample and out-sample RMSE
 RMSE %>%
   knitr::kable()
 ```
@@ -680,7 +692,8 @@ level2122 <- data.frame(arima_pred) %>%
 
 
 dplyr::bind_rows(lower, upper, level2122) %>%
-  select(time_index, .mean) %>%
+  mutate() %>%
+  select(time_index, .mean, value) %>%
   rename("Forecast CO2 Level" = ".mean", "Time" = "time_index") %>%
   knitr::kable()
 ```
