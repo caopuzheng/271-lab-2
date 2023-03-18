@@ -2,7 +2,7 @@
 title: 'W271 Lab 2: CO2 Present'
 geometry: margin=1in
 output:
-  github_document: default
+  bookdown::pdf_document2: default
 ---
 
 ```{r load packages, echo = FALSE, message = FALSE, warning=FALSE}
@@ -173,7 +173,7 @@ co2_present_ts <- co2_present_monthly %>%
   select(month_index, value) %>%
   as.ts()
 # could use geom_boxplot() in ggplot2
-box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppm)", main = "Monthly Mean CO2"))
+box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppmv)", main = "Monthly Mean CO2"))
 ```
 
 
@@ -202,19 +202,6 @@ prediction_ts <- prediction_ts %>%
   ) %>%
   add_column(
     lm_forecast = lm_forecast$mean
-  )
-
-# visualize the forecast vs the actual
-prediction_ts %>%
-  ggplot() +
-  aes(x = month_index) +
-  geom_line(aes(x = month_index, y = value, color = "Actual")) +
-  geom_line(aes(x = month_index, y = lm_forecast, color = "Linear")) +
-  geom_line(aes(x = month_index, y = poly_forecast, color = "Polynomial")) +
-  labs(
-    x = "Month and Year",
-    y = "CO2 Level (ppmv)",
-    title = "Model Prediction vs Actual CO2 Level"
   )
 ```
 
@@ -289,7 +276,7 @@ resid %>%
   geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last) +
   labs(
     x = "Month and Year",
-    y = "CO2 Level (ppm)",
+    y = "CO2 Level (ppmv)",
     title = "Model Prediction Biases"
   )
 ```
@@ -334,14 +321,16 @@ As noted above, the 1997 ARIMA model yielded the best prediction results, even t
 
 For both SA and NSA series, the present co2 dataset shows some similar characteristics to the 1997 co2 dataset. In our 1997 ARIMA model fit process, we used BIC as the goodness-of-fit assessment criteria to choose the optimal model version.  We believe this approach is still appropriate for refitting the ARIMA model using the present data series. We will choose the best ARIMA models with the lowest BIC score.
 
-```{r seasonality-adjusted}
+```{r seasonality-adjusted, echo=FALSE, message=FALSE, warning=FALSE}
 dcmp_components <- dcmp_add %>% components()
 
 dcmp_components
 
 co2_enhanced <- co2_enhanced %>%
-  mutate(seasonal_adj_value = dcmp_components$season_adjust,
-         seasonal_value = dcmp_components$season_year)
+  mutate(
+    seasonal_adj_value = dcmp_components$season_adjust,
+    seasonal_value = dcmp_components$season_year
+  )
 
 # plot the annualized growth rate
 p_norm <- co2_enhanced %>%
@@ -350,7 +339,6 @@ p_norm <- co2_enhanced %>%
   geom_line(color = "steelblue") +
   labs(
     title = TeX("Atmospheric CO2 Level"),
-    subtitle = 'The "Keeling Curve"',
     x = "Month and Year",
     y = TeX(r'($CO_2$ Level)')
   ) +
@@ -362,7 +350,6 @@ p_seasonal_adj <- co2_enhanced %>%
   geom_line(color = "steelblue") +
   labs(
     title = TeX("Seasonality Adjusted Atmospheric CO2 Level"),
-    subtitle = 'The "Keeling Curve"',
     x = "Month and Year",
     y = TeX(r'($CO_2$ Level)')
   ) +
@@ -374,26 +361,25 @@ p_seasonal <- co2_enhanced %>%
   aes(x = time_index, y = seasonal_value) +
   geom_line(color = "steelblue") +
   labs(
-    title = TeX("Seasonality Adjusted Atmospheric CO2 Level"),
-    subtitle = 'The "Keeling Curve"',
+    title = TeX("Seasonality of CO2 Level"),
     x = "Month and Year",
     y = TeX(r'($CO_2$ Level)')
   ) +
   theme(plot.title = element_text(size = 10))
 
 
-p_norm | p_seasonal_adj /
-p_seasonal
+p_norm / p_seasonal_adj
+# / p_seasonal
 ```
 
-```{r train-test-split}
+```{r train-test-split, echo=FALSE, message=FALSE, warning=FALSE}
 co2_train <- co2_enhanced %>%
   filter(year < 2020)
 co2_test <- co2_enhanced %>%
   filter(year >= 2020)
 ```
 
-```{r estimating-weekly-arima-model}
+```{r estimating-weekly-arima-model, echo=FALSE, message=FALSE, warning=FALSE}
 co2.weekly.arima.nsa <- co2_train %>%
   model(nsa_arima = ARIMA(value, ic = "bic"))
 
@@ -402,168 +388,118 @@ co2.weekly.arima.nsa %>% report()
 
 > ARIMA(0,1,2)(2,1,0)[52] 
 
-```{r visualzied-fitted-models}
+```{r visualzied-fitted-models, echo=FALSE, message=FALSE, warning=FALSE}
 co2.weekly.arima.sa <- co2_train %>%
   model(sa_arima = ARIMA(
-    seasonal_adj_value ~ 1 + pdq(0:10, 1, 0:10) + PDQ(0, 0, 0), ic = "bic", stepwise = F, greedy = F))
+    seasonal_adj_value ~ 1 + pdq(0:10, 1, 0:10) + PDQ(0, 0, 0),
+    ic = "bic", stepwise = FALSE, greedy = FALSE
+  ))
 
 co2.weekly.arima.sa %>% report()
 ```
 
 > Since the searies is sesonally adjusted, we estimated this to be ARIMA(2,1,3)
 
-
-```{r polynomial-sa-fit}
+```{r polynomial-sa-fit, echo=FALSE, message=FALSE, warning=FALSE}
 fit_cubic_season <- co2_train %>%
   model(trend_model = TSLM(seasonal_adj_value ~ trend() + I(trend()^2) + I(trend()^3) + season()))
-#fit_cubic_season %>% report()
+# fit_cubic_season %>% report()
 ```
 
 > Using same fit as before
 
-```{r in-sample-fit}
-# extract fitted values and merge fitted values together
-nsa.fitted <- co2.weekly.arima.nsa %>% fitted.values()
-sa.fitted <- co2.weekly.arima.sa %>% fitted.values()
+```{r in-sample-fit, echo=FALSE, message=FALSE, warning=FALSE}
+# extract residuals values together
+nsa.resid <- co2.weekly.arima.nsa %>% residuals()
+sa.resid <- co2.weekly.arima.sa %>% residuals()
+poly.resid <- fit_cubic_season %>% residuals()
 
-fitted_values <- nsa.fitted %>% left_join(sa.fitted, by = "time_index", suffix = c("_nsa", "_sa"))
-in_sample_df <- co2_train %>% left_join(fitted_values, by = "time_index")
-
-p_insample_nsa <- in_sample_df %>%
-  ggplot(aes(x = time_index)) +
-  geom_line(aes(y = value, colour = "Data")) +
-  geom_line(aes(y = .fitted_nsa, colour = "Fitted")) +
-  labs(
-    y = "CO2 Level",
-    title = "In-Sample 
-    Non-Seaonal Adjusted 
-    ARIMA Model"
+resid_values <- nsa.resid %>%
+  left_join(sa.resid, by = "time_index", suffix = c("_nsa", "_sa")) %>%
+  left_join(co2_train, by = "time_index") %>%
+  left_join(poly.resid, by = "time_index") %>%
+  select(
+    time_index,
+    .resid_nsa,
+    .resid_sa,
+    .resid
+  ) %>%
+  dplyr::rename(
+    "nsa_resid" = ".resid_nsa",
+    "sa_resid" = ".resid_sa",
+    "poly_resid" = ".resid"
   )
 
-p_insample_sa <- in_sample_df %>%
+resid_values %>%
   ggplot(aes(x = time_index)) +
-  geom_line(aes(y = value, colour = "Data")) +
-  geom_line(aes(y = .fitted_sa+co2_train$seasonal_value, colour = "Fitted")) +
+  geom_line(aes(y = nsa_resid, colour = "Non-Seaonal Adj ARIMA")) +
+  geom_line(aes(y = sa_resid, colour = "Seaonal Adj ARIMA")) +
+  geom_line(aes(y = poly_resid, colour = "Seasonal Adj Polynomial")) +
   labs(
     y = "CO2 Level",
-    title = "In-Sample 
-    Seaonal Adjusted 
-    ARIMA Model"
+    title = "In-Sample Model Residual"
   )
-
-
-p_insample_poly <- augment(fit_cubic_season) %>%
-  ggplot(aes(x = time_index)) +
-  geom_line(aes(y = co2_train$value, colour = "Data")) +
-  geom_line(aes(y = .fitted+co2_train$seasonal_value, colour = "Fitted")) +
-  labs(
-    y = "CO2 Level",
-    title = "In-Sample 
-    Seasonality Adjusted 
-    3rd Degree Polynomial"
-  )
-
-(p_insample_nsa / p_insample_sa) | p_insample_poly
 ```
 
-```{r out-of-sample-forecast}
-arima.nsa.forecast <- co2.weekly.arima.nsa %>%
+> Both ARIMA models have similar in-sample fit. The polynomial model has a slightly worse fit.
+
+```{r out-of-sample-forecast, echo=FALSE, message=FALSE, warning=FALSE}
+resid_out_sample <- co2.weekly.arima.nsa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
-  mutate(actual_level = co2_test$value)
+  rename("arima_nsa_forecast" = ".mean") %>%
+  mutate(arima_nsa_resid = co2_test$value - arima_nsa_forecast) %>%
+  select(time_index, arima_nsa_resid)
 
-arima.sa.forecast <- co2.weekly.arima.sa %>%
+arima.sa.resid <- co2.weekly.arima.sa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
-  mutate(.mean = .mean + co2_test$seasonal_value,
-         actual_level = co2_test$value)
+  rename("arima_sa_forecast" = ".mean") %>%
+  mutate(arima_sa_resid = co2_test$value - arima_sa_forecast - co2_test$seasonal_value) %>%
+  select(time_index, arima_sa_resid)
 
+resid_out_sample <- resid_out_sample %>% add_column(
+  arima_sa_resid = arima.sa.resid$arima_sa_resid
+)
 
-polynomial.sa.forecast <- fit_cubic_season %>%
+polynomial.sa.resid <- fit_cubic_season %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
-    mutate(.mean = .mean + co2_test$seasonal_value,
-         actual_level = co2_test$value)
+  rename("polynomial_sa_forecast" = ".mean") %>%
+  mutate(polynomial_nsa_resid = co2_test$value - polynomial_sa_forecast - co2_test$seasonal_value)
 
+resid_out_sample <- resid_out_sample %>% add_column(
+  polynomial_nsa_resid = polynomial.sa.resid$polynomial_nsa_resid
+)
 
-arima.nsa.forecast.plot <- arima.nsa.forecast %>%
+resid_out_sample %>%
   ggplot(aes(x = time_index)) +
-  geom_line(aes(y = actual_level, colour = "Data")) +
-  geom_line(aes(y = .mean, colour = "Fitted")) +
+  geom_line(aes(y = arima_nsa_resid, colour = "Non-Seaonal Adj ARIMA")) +
+  geom_line(aes(y = arima_sa_resid, colour = "Seaonal Adj ARIMA")) +
+  geom_line(aes(y = polynomial_nsa_resid, colour = "Seaonal Adj Polynomial")) +
   labs(
     x = "Week",
     y = "CO2 Level",
-    title = "Out-of-Sample 
-    Non-Seaonal Adjusted 
-    ARIMA Model"
+    title = "Out-of-Sample Model"
   )
-
-arima.sa.forecast.plot <- arima.sa.forecast %>%
-  ggplot(aes(x = time_index)) +
-  geom_line(aes(y = actual_level, colour = "Data")) +
-  geom_line(aes(y = .mean, colour = "Fitted")) +
-  labs(
-    y = "CO2 Level",
-    title = "Out-of-Sample 
-    Seaonal Adjusted 
-    ARIMA Model"
-  )
-
-polynomial.sa.forecast.plot <- polynomial.sa.forecast %>%
-  ggplot(aes(x = time_index)) +
-  geom_line(aes(y = actual_level, colour = "Data")) +
-  geom_line(aes(y = .mean, colour = "Fitted")) +
-  labs(
-    x = "Week",
-    y = "CO2 Level",
-    title = "Out-of-Sample
-    Seaonally Adjusted
-    Polynomial Model"
-  )
-
-
-# arima.nsa.forecast.plot <- arima.nsa.forecast %>%
-#   autoplot(co2_test, color = "red") +
-#   labs(
-#     x = "Week",
-#     y = "CO2 Level",
-#     title = "Out-Of-Sample 
-#     Non-Seaonal Adjusted 
-#     ARIMA Model"
-#   )
-# arima.sa.forecast.plot <- arima.sa.forecast %>%
-#   autoplot(color = "red") +
-#   labs(
-#     x = "Week",
-#     y = "CO2 Level",
-#     title = "Out-Of-Sample 
-#     Seaonally Adjusted 
-#     ARIMA Model"
-#   )
-# 
-# polynomial.sa.forecast.plot <- polynomial.sa.forecast %>%
-#   autoplot(co2_test, color = "red") +
-#   labs(
-#     x = "Week",
-#     y = "CO2 Level",
-#     title = "Out-Of-Sample 
-#     Seaonally Adjusted 
-#     Polynomial Model"
-#   )
-
-
-
-(arima.nsa.forecast.plot / arima.sa.forecast.plot) | polynomial.sa.forecast.plot
 ```
-```{r compute-rmse}
-arima_nsa_rmse <- round(sqrt(mean((co2_test$value - arima.nsa.forecast$.mean)^2)),3)
-arima_sa_rmse <-  round(sqrt(mean((co2_test$value - arima.sa.forecast$.mean)^2)),3)
-poly_sa_rmse <-  round(sqrt(mean((co2_test$value - polynomial.sa.forecast$.mean)^2)),3)
+
+```{r compute-rmse, echo=FALSE, message=FALSE, warning=FALSE}
+arima_nsa_rmse <- round(sqrt(mean(resid_out_sample$arima_nsa_resid^2)), 3)
+arima_sa_rmse <- round(sqrt(mean(resid_out_sample$arima_sa_resid^2)), 3)
+poly_sa_rmse <- round(sqrt(mean(resid_out_sample$polynomial_nsa_resid^2)), 3)
 
 
-RMSE <- data.frame(arima_nsa_resid = arima_nsa_rmse,
-                    arima_sa_resid = arima_sa_rmse,
-                    poly_sa_resid = poly_sa_rmse)
+RMSE <- data.frame(
+  model = c("ARIMA Non-Seasonal", "ARIMA Seasonal", "Polynomial Seasonal"),
+  rmse = c(arima_nsa_rmse, arima_sa_rmse, poly_sa_rmse)
+)
 
-RMSE
+RMSE %>%
+  knitr::kable()
 ```
+
+> The ARIMA model has a better fit than the polynomial model, and the non-seasonally adjusted ARIMA model has a better fit than the seasonally adjusted ARIMA model.
+
+> Thus we have decided to use the non-seasonally adjusted ARIMA model for our predictions.
+
 ## (3 points) Task Part 6b: How bad could it get?
 
 With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
@@ -597,95 +533,13 @@ level2122 <- data.frame(arima_pred) %>%
   head(1)
 
 
-co2_bounds <- dplyr::bind_rows(lower, upper, level2122)
-co2_bounds %>% select(time_index, .mean)
+dplyr::bind_rows(lower, upper, level2122) %>%
+  select(time_index, .mean) %>%
+  rename("Forecast CO2 Level" = ".mean", "Time" = "time_index") %>%
+  knitr::kable()
 ```
 
-> CO2 level will reach 420 by 18th week of 2021, 500 by 34th week of 2056
+> CO2 level reached 420 on the 18th week of 2021, and will reach 500 by 2056
 > CO2 level will be 668 by 2122
 
 -------------------------
-
-
-```{r ETSDA normal series}
-# ETSDA
-# plot the series
-series <- co2_train %>%
-  ggplot(aes(x = time_index, y = seasonal_adj_value)) +
-  geom_line() +
-  ggtitle("Atmospheric CO2 Time Series") +
-  xlab("Date") +
-  ylab("CO2 level ppm")
-
-# plot of histogram
-histogram <- co2_train %>%
-  ggplot(aes(x = seasonal_adj_value)) +
-  geom_histogram(color = "black", fill = "white", binswidth = 10) +
-  ggtitle("Atmospheric CO2 Histogram") +
-  xlab("CO2 level ppm")
-
-
-# plot acf and pacf
-acf <- ggAcf(co2_train$seasonal_adj_value, level = 0.95)
-pacf <- ggPacf(co2_train$seasonal_adj_value, level = 0.95)
-
-(series | histogram) /
-  (acf | pacf)
-```
-
-
-```{r ETSDA seasonality adj series}
-# ETSDA
-# plot the series
-series <- co2_train %>%
-  ggplot(aes(x = time_index, y = value)) +
-  geom_line() +
-  ggtitle("Atmospheric CO2 Time Series") +
-  xlab("Date") +
-  ylab("CO2 level ppm")
-
-# plot of histogram
-histogram <- co2_train %>%
-  ggplot(aes(x = value)) +
-  geom_histogram(color = "black", fill = "white", binswidth = 10) +
-  ggtitle("Atmospheric CO2 Histogram") +
-  xlab("CO2 level ppm")
-
-
-# plot acf and pacf
-acf <- ggAcf(co2_train$value, level = 0.95)
-pacf <- ggPacf(co2_train$value, level = 0.95)
-
-(series | histogram) /
-  (acf | pacf)
-```
-
-```{r first order diff ETSDA plot}
-# plot the series
-co2_present$diff <- c(0, diff(co2_present$value))
-
-series <- co2_present %>%
-  ggplot(aes(x = time_index, y = diff)) +
-  geom_line() +
-  ggtitle("CO2 1st Order Difference Time Series") +
-  xlab("Date") +
-  ylab("CO2 (ppm)")
-
-# plot of histogram
-histogram <- co2_present %>%
-  ggplot(aes(x = diff)) +
-  geom_histogram(color = "black", fill = "white", binwidth = 10) +
-  ggtitle("CO2 1st Order Difference Histogram") +
-  xlab("CO2 (ppm)")
-
-
-# plot acf and pacf
-acf <- ggAcf(co2_present$diff, ci = 0.95)
-pacf <- ggPacf(co2_present$diff, ci = 0.95)
-
-(series | histogram) /
-  (acf | pacf)
-```
-> looks like white noise ...
-
-
