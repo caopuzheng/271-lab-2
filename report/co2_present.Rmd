@@ -33,28 +33,34 @@ library(fpp2)
 ```
 
 ## (3 points) Task 0b: Introduction 
-In our 1997 report, we used the linear models and the ARIMA model to forecast the $CO_2$  level through 2020 and beyond.  We noted the $CO_2$  level increased from 360 ppmv in 1997 to 420 ppmv as of February 2023, which was at the higher end of our forecast interval (385-424 ppmv) at the 95% confidence level.  We plan to compare our 1997 forecast to the monthly actual levels to evaluate the model performance.  We will leverage the learnings to enhance our model performance. 
+In our 1997 report, we developed the linear models and the ARIMA model to forecast the $CO_2$  level through 2020 and beyond. The $CO_2$  level increased from 360 ppmv in December 1997 to 420 ppmv in February 2023. The 420 ppmv level was at the higher end of our forecast range (385-424 ppmv) with 95% confidence.  In this follow-up study, we will compare our 1997 forecast to the actuals, and make further enhancements to the model performance. 
 
-While this may not affect our analysis, we noticed that due to the eruption of the Mauna Loa Volcano, measurements from Mauna Loa Observatory were suspended as of Nov. 29, 2022. Observations starting in December 2022 are from a site at the Maunakea Observatories, approximately 21 miles north of the Mauna Loa Observatory. We believe this should not pose a significant impact on the data generation process though.
-
+The original data set was a monthly series and the new data set has both monthly and weekly frequency. Also, due to the eruption of the Mauna Loa Volcano, measurements from Mauna Loa Observatory were suspended as of 11/29/2022. Observations starting in December 2022 are from a site at the Maunakea Observatories, ~21 miles north of the original site. We believe the site change did not pose a significant impact on the data generation process.
 
 ## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
 
 We sourced the weekly and monthly data set from the United States' National Oceanic and Atmospheric Administration data page [[here](https://gml.noaa.gov/ccgg/trends/data.html)]. We noted 18 observations with -999.99 value (missing values) in the weekly dataset. We replaced the 18 invalid weekly values with their corresponding month’s value in the monthly data set.  Then we generated two clean time series data sets from May 1974 to March 2023: co2_present (weekly frequency) and co2_present_month (monthly frequency).
 
-Similar to our 1997 observations, we continued to see an increasing $CO_2$ level and seasonal variability (see charts in Figure \@ref(fig:CO2-ETSDA) below), however, the trend line steepened after 2005.  The annual growth rates are mostly in the range of 0 to 1% (slightly wider than the 1997 range of 0-0.75%). The  $CO_2$ Decomposition graph continued to show an upward trend, strong seasonality, and the irregular effect.
-
-We noted that the peak $CO_2$ month is April (instead of May in 1997 report) and the lowest month is September (instead of October), The difference between the peak and lowest month is similar ($`r max_min_diff`$ ppmv)    max_min_diff <- max(box$stats[3, ]) - min(box$stats[3, ])
 
 ```{r data-load-pipeline-from-website, echo=FALSE, message=FALSE, warning=FALSE}
-co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
-  sep = ",",
-  skip = 51
-)
-head(co2_present_raw)
+# Developed the data pipeline to source weekly data from the NOAA site
+
+# co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
+#   sep = ",",
+#   skip = 51
+# )
+# head(co2_present_raw)
+```
+```{r include=FALSE}
+# To present data lost when the NOAA website is down, we also downloaded the csv file from the NOAA site 
+co2_present_raw <- read.csv(file = "C:\\Users\\lisaw\\Desktop\\MIDS_class\\w271\\Lab_2\\271_team_lab_2\\co2_weekly_mlo.csv",
+                            sep = ",",
+                            skip = 51)
+
 ```
 
-```{r create-time-component, echo=FALSE, message=FALSE, warning=FALSE}
+
+```{r create-time-component, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 co2_present_raw <- co2_present_raw %>%
   select(year, month, day, average) %>%
   mutate(time_index = yearweek(
@@ -72,8 +78,13 @@ co2_present_raw %>%
 ```
 
 ```{r eda: fill-the-missing-weekly-data-from-monthly, echo=FALSE, message=FALSE, warning=FALSE}
+# co2_present_month <- read.csv(
+#   "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
+#   sep = ",", skip = 56
+# )
+# TO UPDATE
 co2_present_month <- read.csv(
-  "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
+  "C:\\Users\\lisaw\\Desktop\\MIDS_class\\w271\\Lab_2\\271_team_lab_2\\co2_mm_mlo.csv",
   sep = ",", skip = 56
 )
 
@@ -91,6 +102,7 @@ co2_present <- co2_present_raw %>%
 # print(sum(is.na(co2_present)))
 # print(start(co2_present$time_index))
 # print(end(co2_present$time_index))
+
 ```
 
 ```{r time-plot, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
@@ -107,14 +119,14 @@ co2_present %>%
 ```
 
 ```{r CO2-ETSDA, echo = FALSE, warning=FALSE, message=FALSE, fig.align='center', out.width="65%", fig.cap="Atmospheric CO2 Level Time Series Overview"}
-co2_enhanced <- co2_present %>%
+co2_present_enhanced <- co2_present %>%
   mutate(
     annual_growth = (value - lag(value, n = 52)) / lag(value, n = 52) * 100,
     log_value = log(value)
   )
 
 # Use additive method in STL decomposition
-dcmp_add <- co2_enhanced %>%
+dcmp_add <- co2_present_enhanced %>%
   model(stl = STL(value))
 
 # plot of time series
@@ -130,10 +142,10 @@ p1 <- components(dcmp_add) %>%
   theme(plot.title = element_text(size = 10))
 
 # plot the annualized growth rate
-p2 <- co2_enhanced %>%
+p2 <- co2_present_enhanced %>%
   ggplot() +
   aes(x = time_index, y = annual_growth) +
-  geom_line(color = "steelblue") +
+  geom_line(color = "steelblue") + geom_smooth(method = "lm", color='black') +
   labs(
     title = TeX(r'(Annualized Growth $CO_2$)'),
     subtitle = 'The "Keeling Curve"',
@@ -143,7 +155,7 @@ p2 <- co2_enhanced %>%
   theme(plot.title = element_text(size = 10))
 
 # plot the histogram
-p3 <- co2_enhanced %>%
+p3 <- co2_present_enhanced %>%
   ggplot(aes(x = value)) +
   geom_histogram(binwidth = 1) +
   labs(title = TeX(r'(Histogram Monthly Mean $CO_2$)'), col = " blue") +
@@ -157,6 +169,14 @@ p4 <- components(dcmp_add) %>%
 
 (p1 | p2) / (p3 | p4)
 ```
+
+```{r, include=FALSE }
+mean_growth_rate <- round(mean(co2_present_enhanced$annual_growth, na.rm=TRUE),3)
+
+```
+
+Similar to our 1997 observations, there is an increasing $CO_2$ trend and seasonal variability in the data set. See charts in Figure \@ref(fig:CO2-ETSDA). However, the trend line seems to steepen in after mid-2000s. The annual growth rates are mostly in the range of 0 to 1%, with a modest upward trend (also observed in 1997). We noticed that the long run average of the annual growth rates now is $`r mean_growth_rate`$%, higher than the prior long run average of annual growth rate of 0.37% in the 1997 data set. This further confirms that $CO_2$ levels increased faster in the recent years. The $CO_2$ Decomposition graph continued to show an upward trend, strong seasonality, and the irregular effect.
+
 ```{r generate-monthly-indexed-summary, echo=FALSE, message=FALSE, warning=FALSE}
 co2_present_monthly <- co2_present %>%
   index_by(month_index = ~ yearmonth(.)) %>%
@@ -174,13 +194,17 @@ co2_present_ts <- co2_present_monthly %>%
   as.ts()
 # could use geom_boxplot() in ggplot2
 box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppmv)", main = "Monthly Mean CO2"))
+
+max_min_diff <- max(box$stats[3, ]) - min(box$stats[3, ])
+
 ```
+We also noted that the peak $CO_2$ month is April (instead of May in the 1997 report) and the lowest month is September (instead of October). The seasonal difference between the peak and trough month is ($`r max_min_diff`$ ppmv), similar to the 1997 observation.  
 
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
-In our 1997 report, we developed the two linear models (one model using time as the single variable, and the other model using the third polynomial degree of trend, and seasonality), and forecasted the $CO_2$ level through 2020 and beyond. We compared the forecast results to our actuals through the present (February 2023).  Both models under-forecasted the $CO_2$ level and performed poorly. The linear model outperformed the polynomial model over the longer term, which is expected based on how third degree polynomials behave. See figure (one with ARIMA).
+In our 1997 report, we developed the two linear models: a linear model using time as the single variable, and a polynomial model using the third polynomial degree of trend and seasonality. We used these models to forecast the $CO_2$ level through 2020 and beyond. In comparison of the forecast results to the actuals through the present (February 2023), we noted that both models under-forecasted the $CO_2$ levels. In a relative term, the linear model outperformed the polynomial model in the long run, which indicated the overfitting issues of the third degree polynomial model. See the comparison in Figure \@ref(fig:original-arima-model).
 
-The linear model with time variable projected a straight trend line (without any seasonal effect) and forecasted $CO_2$ to reach 395 ppmv in February 2023, while the actual level was 420 ppmv. The polynomial model captured the seasonal effect and projected increasing levels until the mid-2021 and then flattened and shifted downward.  The polynomial model forecasted 384 ppmv for February 2023. 
+The actual level $CO_2$ was 420 ppmv in February 2023. The linear model projected a straight trend line (without any seasonal effect) and forecasted $CO_2$ to reach 395 ppmv in February 2023. The polynomial model captured the seasonal effect and projected increasing levels until the mid-2021 and then flattened and shifted downward.  The polynomial model forecasted 384 ppmv in February 2023. 
 
 ```{r, original-linear-model, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # create a time series for the prediction period
@@ -206,9 +230,9 @@ prediction_ts <- prediction_ts %>%
 ```
 
 ## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
-In our 1997 report, we also fitted an ARIMA model (ARIMA(0,1,1)(1,1,2)[12]). This model captured the seasonal effect and projected well until 2005.  The model under-forecasted $CO_2$ levels after 2005. The ARIMA model forecasted 405 ppmv for 2/2023 vs. the actual level of 420 ppmv (figure). The ARIMA model performs much better than the two linear models.
+In our 1997 report, we also fitted an ARIMA model (ARIMA(0,1,1)(1,1,2)[12]). This model captured the seasonal effect and projected well until 2005 but under-forecasted after 2005. The ARIMA model forecasted 405 ppmv for 2/2023 vs. the actual level of 420 ppmv (figure). Relatively, the ARIMA model performs much better than the two linear models. See the comparison in the left chart in Figure \@ref(fig:forecast-compare-RSME).
 
-```{r, original-arima-model, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, original-arima-model, echo=FALSE, message=FALSE, warning=FALSE, out.width="65%"}
 # original arima model with forecast
 mod.arima <- arima(co2, order = c(0, 1, 1), seasonal = list(order = c(1, 1, 2), period = 12))
 arima_forecast <- forecast::forecast(mod.arima, level = c(95), h = h)
@@ -217,8 +241,11 @@ prediction_ts <- prediction_ts %>% add_column(
   arima_forecast = arima_forecast$mean
 )
 
+```
+```{r, forecast-compare-RSME, echo=FALSE, message=FALSE, warning=FALSE, out.width="75%", fig.cap="Model Prediction vs Actual (Left) and Model Prediction Biases (Right)"}
+
 # visualize the forecast vs the actual
-prediction_ts %>%
+predict_compare <- prediction_ts %>%
   ggplot() +
   geom_line(aes(x = month_index, y = value, color = "Actual")) +
   geom_line(aes(x = month_index, y = lm_forecast, color = "Linear")) +
@@ -228,22 +255,76 @@ prediction_ts %>%
     x = "Month and Year",
     y = "CO2 Level (ppmv)",
     title = "Model Prediction vs Actual CO2 Level"
-  )
+  ) + theme(legend.position="bottom",
+            legend.text = element_text(colour="blue", size=8, 
+                                     face="bold"),
+            axis.title=element_text(size=10,face="bold"),
+            plot.title = element_text(size=12,face="bold"))
+
+#The following chart answers Task 4b: Evaluate model performance
+
+# calculate RSME of the forecast errors of each model
+resid <- prediction_ts %>%
+  mutate(
+    lm_resid = value - lm_forecast,
+    poly_resid = value - poly_forecast,
+    arima_resid = value - arima_forecast
+  ) %>%
+  select(month_index, lm_resid, poly_resid, arima_resid)
+
+# filter the last value for RMSE and display the RMSE value in ggplot
+resid_last <- resid %>%
+  filter(month_index == max(month_index)) %>%
+  mutate(
+    lm_resid = lm_resid + 0.5,
+    poly_resid = poly_resid + 0.5,
+    arima_resid = arima_resid + 1
+  ) %>%
+  add_column(
+    lm_rmse = round(sqrt(mean(resid$lm_resid^2)), 1),
+    poly_rmse = round(sqrt(mean(resid$poly_resid^2)), 1),
+    arima_rmse = round(sqrt(mean(resid$arima_resid^2)), 1)
+  ) 
+
+#plot the residuals and display the RSME value at the end of each curve
+resid_plot <- resid %>%
+  ggplot() +
+  geom_line(aes(x = month_index, y = lm_resid, color = "Linear")) +
+  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last, size=3, hjust = +1) +
+  geom_line(aes(x = month_index, y = poly_resid, color = "Polynomial")) +
+  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last, size=3, hjust = +1) +
+  geom_line(aes(x = month_index, y = arima_resid, color = "ARIMA")) +
+  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data =resid_last, size=3, hjust = +1) +
+  labs(
+    x = "Month and Year",
+    y = "CO2 Level (ppmv)",
+    title = "Model Prediction Biases"
+  ) + 
+  theme(legend.position="bottom", 
+        legend.text = element_text(colour="blue", size=8, 
+                                     face="bold"), 
+        axis.title=element_text(size=10,face="bold"),
+        plot.title = element_text(size=12,face="bold"))
+
+
+predict_compare | resid_plot
 ```
 
+
 ## (3 points) Task 4b: Evaluate the performance of 1997 linear and ARIMA models 
-In our 1997 report, our ARIMA model projected about the first time that CO2 would cross 420 ppm in May 2031. Sadly we first crossed this level in April 2021, 10 years earlier than our projection.  This is a very concerning trend.
+In our 1997 report, our ARIMA model projected the first time that CO2 would cross 420 ppm in May 2031. Sadly we already crossed this level in April 2021, 10 years earlier than our projection.  
 
-To quantify the model projection errors/biases, we calculated the RMSE of the models.  Among the three models, the ARIMA model has the lowest RSME (8.2), in comparison to the linear model (14.1) and the polynomial model (17.6).
+To quantify the model projection errors/biases, we calculated the RMSE of the models. Among the three models, the ARIMA model has the lowest RSME (8.2), in comparison to the linear model (14.1) and the polynomial model (17.6). See the comparison in the right chart in Figure \@ref(fig:forecast-compare-RSME).
 
 
-```{r, cross-420-ppm}
+```{r, cross-420-ppm, include=FALSE}
 co2_present %>%
   dplyr::filter(value >= 420) %>%
   head(1)
 ```
 
-```{r, generate-prediction-resid, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, generate-prediction-resid, echo=FALSE, message=FALSE, warning=FALSE, out.width="65%", include=FALSE}
+#This part was already included in Task 3b above
 resid <- prediction_ts %>%
   mutate(
     lm_resid = value - lm_forecast,
@@ -269,11 +350,11 @@ resid_last <- resid %>%
 resid %>%
   ggplot() +
   geom_line(aes(x = month_index, y = lm_resid, color = "Linear")) +
-  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last) +
+  geom_text(aes(x = month_index, y = lm_resid, label = paste("RMSE:", lm_rmse)), data = resid_last, size=2.5) +
   geom_line(aes(x = month_index, y = poly_resid, color = "Polynomial")) +
-  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last) +
+  geom_text(aes(x = month_index, y = poly_resid, label = paste("RMSE:", poly_rmse)), data = resid_last, size=2.5) +
   geom_line(aes(x = month_index, y = arima_resid, color = "ARIMA")) +
-  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last) +
+  geom_text(aes(x = month_index, y = arima_resid, label = paste("RMSE:", arima_rmse)), data = resid_last, size=2.5) +
   labs(
     x = "Month and Year",
     y = "CO2 Level (ppmv)",
@@ -282,6 +363,7 @@ resid %>%
 ```
 
 ```{r, formal-test-Ljung-Box, include = FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+#This section is not required for Task 4b
 # use Ljung-Box test to gauge residual stationarity
 
 # Linear model residual
@@ -317,23 +399,25 @@ resid %>%
 
 ## (4 points) Task 5b: Train best models on present data
 
-As noted above, the 1997 ARIMA model yielded the best prediction results, even though it still underestimated the actuals, especially after 2005. We decided to refit the ARIMA model using the actual data. 
+While the 1997 ARIMA model outperformed the linear models, it still under-predicted actual $CO_2$ levels after 2005. We decided to refit the ARIMA model using the actual data. 
 
-For both SA and NSA series, the present co2 dataset shows some similar characteristics to the 1997 co2 dataset. In our 1997 ARIMA model fit process, we used BIC as the goodness-of-fit assessment criteria to choose the optimal model version.  We believe this approach is still appropriate for refitting the ARIMA model using the present data series. We will choose the best ARIMA models with the lowest BIC score.
+We seasonally adjusted the weekly series, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. 
 
-```{r seasonality-adjusted, echo=FALSE, message=FALSE, warning=FALSE}
+In our 1997 model fit process, we discussed the rationale of using BIC as the goodness-of-fit assessment criteria to choose the best model fit (Task 3a).  We believe this process is still appropriate for refitting the ARIMA model using the SA and NSA data series. We will choose the best ARIMA models with the lowest BIC score.
+
+```{r seasonality-adjusted, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 dcmp_components <- dcmp_add %>% components()
 
-dcmp_components
+# dcmp_components
 
-co2_enhanced <- co2_enhanced %>%
+co2_present_enhanced <- co2_present_enhanced %>%
   mutate(
     seasonal_adj_value = dcmp_components$season_adjust,
     seasonal_value = dcmp_components$season_year
   )
 
-# plot the annualized growth rate
-p_norm <- co2_enhanced %>%
+# plot the time series
+p_norm <- co2_present_enhanced %>%
   ggplot() +
   aes(x = time_index, y = value) +
   geom_line(color = "steelblue") +
@@ -344,7 +428,7 @@ p_norm <- co2_enhanced %>%
   ) +
   theme(plot.title = element_text(size = 10))
 
-p_seasonal_adj <- co2_enhanced %>%
+p_seasonal_adj <- co2_present_enhanced %>%
   ggplot() +
   aes(x = time_index, y = seasonal_adj_value) +
   geom_line(color = "steelblue") +
@@ -356,7 +440,7 @@ p_seasonal_adj <- co2_enhanced %>%
   theme(plot.title = element_text(size = 10))
 
 
-p_seasonal <- co2_enhanced %>%
+p_seasonal <- co2_present_enhanced %>%
   ggplot() +
   aes(x = time_index, y = seasonal_value) +
   geom_line(color = "steelblue") +
@@ -369,15 +453,18 @@ p_seasonal <- co2_enhanced %>%
 
 
 p_norm / p_seasonal_adj
-# / p_seasonal
+
 ```
 
 ```{r train-test-split, echo=FALSE, message=FALSE, warning=FALSE}
-co2_train <- co2_enhanced %>%
+#split the series into training and test sets, using the last two years of observations as the test sets
+co2_train <- co2_present_enhanced %>%
   filter(year < 2020)
-co2_test <- co2_enhanced %>%
+co2_test <- co2_present_enhanced %>%
   filter(year >= 2020)
 ```
+
+Using this model optimization process, we selected the best ARIMA model for the weekly NSA data series (“ARIMA Non-Seasonal Model”) as ARIMA(0,1,1)(2,1,0)[52].  This model has seasonal parameters.  The best ARIMA model for the weekly SA series (“ARIMA Seasonal Model”) is ARIMA(1,1,1) with drift, which does not have seasonal parameters given the data was seasonally adjusted. All coefficients for the ARIMA models are significant, see the model results below.  We also fitted a third degree polynomial model to the SA data series (“Polynomial Seasonal”).
 
 ```{r estimating-weekly-arima-model, echo=FALSE, message=FALSE, warning=FALSE}
 co2.weekly.arima.nsa <- co2_train %>%
@@ -385,8 +472,6 @@ co2.weekly.arima.nsa <- co2_train %>%
 
 co2.weekly.arima.nsa %>% report()
 ```
-
-> ARIMA(0,1,2)(2,1,0)[52] 
 
 ```{r visualzied-fitted-models, echo=FALSE, message=FALSE, warning=FALSE}
 co2.weekly.arima.sa <- co2_train %>%
@@ -398,17 +483,14 @@ co2.weekly.arima.sa <- co2_train %>%
 co2.weekly.arima.sa %>% report()
 ```
 
-> Since the searies is sesonally adjusted, we estimated this to be ARIMA(2,1,3)
-
 ```{r polynomial-sa-fit, echo=FALSE, message=FALSE, warning=FALSE}
 fit_cubic_season <- co2_train %>%
   model(trend_model = TSLM(seasonal_adj_value ~ trend() + I(trend()^2) + I(trend()^3) + season()))
 # fit_cubic_season %>% report()
 ```
 
-> Using same fit as before
 
-```{r in-sample-fit, echo=FALSE, message=FALSE, warning=FALSE}
+```{r in-sample-fit, echo=FALSE, message=FALSE, warning=FALSE, out.width="65%"}
 # extract residuals values together
 nsa.resid <- co2.weekly.arima.nsa %>% residuals()
 sa.resid <- co2.weekly.arima.sa %>% residuals()
@@ -430,7 +512,8 @@ resid_values <- nsa.resid %>%
     "poly_resid" = ".resid"
   )
 
-resid_values %>%
+#plot the in sample errors for all three models
+plot_in_sample <- resid_values %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = nsa_resid, colour = "Non-Seaonal Adj ARIMA")) +
   geom_line(aes(y = sa_resid, colour = "Seaonal Adj ARIMA")) +
@@ -439,11 +522,39 @@ resid_values %>%
     y = "CO2 Level",
     title = "In-Sample Model Residual"
   )
+
 ```
 
-> Both ARIMA models have similar in-sample fit. The polynomial model has a slightly worse fit.
+We performed diagnostic analysis of the model residuals to check for residuals stationarity and any assumption violations.  The two ARIMA models have stationary residuals and a normal distribution of the residuals, with a couple of significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which require data transformation to detrend and refit.
 
-```{r out-of-sample-forecast, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, residuals diagnostic plots, warning=FALSE, include=FALSE}
+# Check the stationarity of the NSA ARIMA model
+checkresiduals(resid_values$nsa_resid)
+
+# Check the stationarity of the SA ARIMA model
+checkresiduals(resid_values$sa_resid)
+
+# Check the stationarity of the SA Poly model
+checkresiduals(resid_values$poly_resid)
+```
+
+We compared the model residuals for both the in-sample and out-sample periods for the three models, shown in Figure \@ref(fig:in-out-sample-error-plot). Visually, the polynomial model has higher errors than the two ARIMA models for in-sample and out-sample periods.  
+
+```{r in-sample-RSME, echo=FALSE, include=FALSE}
+arima_nsa_rmse_in <- round(sqrt(mean(resid_values$nsa_resid^2)), 3)
+arima_sa_rmse_in <- round(sqrt(mean(resid_values$sa_resid^2)), 3)
+poly_sa_rmse_in <- round(sqrt(mean(resid_values$poly_resid^2)), 3)
+
+RMSE_in <- data.frame(
+  model = c("ARIMA Non-Seasonal", "ARIMA Seasonal", "Polynomial Seasonal"),
+  RMSE_In_Sample = c(arima_nsa_rmse_in, arima_sa_rmse_in, poly_sa_rmse_in)
+)
+
+RMSE_in %>%
+  knitr::kable()
+```
+
+```{r out-of-sample-forecast, echo=FALSE, message=FALSE, warning=FALSE, out.width="65%"}
 resid_out_sample <- co2.weekly.arima.nsa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("arima_nsa_forecast" = ".mean") %>%
@@ -469,7 +580,8 @@ resid_out_sample <- resid_out_sample %>% add_column(
   polynomial_nsa_resid = polynomial.sa.resid$polynomial_nsa_resid
 )
 
-resid_out_sample %>%
+#plot the error plots for out-of-sample projections
+plot_out_sample <- resid_out_sample %>%
   ggplot(aes(x = time_index)) +
   geom_line(aes(y = arima_nsa_resid, colour = "Non-Seaonal Adj ARIMA")) +
   geom_line(aes(y = arima_sa_resid, colour = "Seaonal Adj ARIMA")) +
@@ -481,29 +593,68 @@ resid_out_sample %>%
   )
 ```
 
+```{r, in-out-sample-error-plot, fig.cap="In-Sample Model Residuals (Left) Out-Sample Model Residuals (Right)", out.width="75%", echo=FALSE}
+#plot in-sample model residuals for all three models
+plot_in_sample <- resid_values %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = nsa_resid, colour = "NSA ARIMA")) +
+  geom_line(aes(y = sa_resid, colour = "SA ARIMA")) +
+  geom_line(aes(y = poly_resid, colour = "SA Poly")) +
+  labs(x = "Week",
+    y = "CO2 Level",
+    title = "In-Sample Model Residual"
+  )+ 
+  theme(legend.position="bottom", 
+        legend.text = element_text(colour="blue", size=8, 
+                                     face="bold"), 
+        axis.title=element_text(size=10,face="bold"),
+        plot.title = element_text(size=10,face="bold")) 
+
+#plot in-sample model residuals for all three models
+plot_out_sample <- resid_out_sample %>%
+  ggplot(aes(x = time_index)) +
+  geom_line(aes(y = arima_nsa_resid, colour = "NSA ARIMA")) +
+  geom_line(aes(y = arima_sa_resid, colour = "SA ARIMA")) +
+  geom_line(aes(y = polynomial_nsa_resid, colour = "SA Poly")) +
+  labs(
+    x = "Week",
+    y = "CO2 Level",
+    title = "Out-of-Sample Model"
+  )+ 
+  theme(legend.position="bottom", 
+        legend.text = element_text(colour="blue", size=8, 
+                                     face="bold"), 
+        axis.title=element_text(size=10,face="bold"),
+        plot.title = element_text(size=10,face="bold")) 
+
+plot_in_sample | plot_out_sample
+```
+
+We calculated each model’s RSME for in-sample and out-of-sample periods, see the table below. The ARIMA Seasonal model has the lowest RSME for the in-sample periods, and the ARIMA Non-Seasonal model has the lowest RSME for the out-of-sample periods.  Out-of-sample period performance is more important, given the unseen data. We concluded that the ARIMA Non-Seasonal model is the best model for this data set.
+
 ```{r compute-rmse, echo=FALSE, message=FALSE, warning=FALSE}
+#calculate the RSME for out-of-sample errors
 arima_nsa_rmse <- round(sqrt(mean(resid_out_sample$arima_nsa_resid^2)), 3)
 arima_sa_rmse <- round(sqrt(mean(resid_out_sample$arima_sa_resid^2)), 3)
 poly_sa_rmse <- round(sqrt(mean(resid_out_sample$polynomial_nsa_resid^2)), 3)
 
-
+#general a combined table for both in-sample and out-of-sample RSME for the three models
 RMSE <- data.frame(
   model = c("ARIMA Non-Seasonal", "ARIMA Seasonal", "Polynomial Seasonal"),
-  rmse = c(arima_nsa_rmse, arima_sa_rmse, poly_sa_rmse)
+  RMSE_In_Sample = c(arima_nsa_rmse_in, arima_sa_rmse_in, poly_sa_rmse_in),
+  RMSE_Out_Sample = c(arima_nsa_rmse, arima_sa_rmse, poly_sa_rmse)
 )
 
+#Generate a table for both in-sample and out-sample RMSE
 RMSE %>%
   knitr::kable()
 ```
 
-> The ARIMA model has a better fit than the polynomial model, and the non-seasonally adjusted ARIMA model has a better fit than the seasonally adjusted ARIMA model.
-
-> Thus we have decided to use the non-seasonally adjusted ARIMA model for our predictions.
-
 ## (3 points) Task Part 6b: How bad could it get?
 
-With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
+We used the ARIMA Non-Seasonal model to predict the $CO_2$ levels through 2122.  We projected $CO_2$ to reach 420 ppmv in Week 18 of 2021, which matches the actual data (420 ppmv  in April 2021).  Our model projects the $CO_2$ level to reach 500 ppmv in Week 32, 2056, and reach 670 ppmv by 2122.  
 
+As we observed from the Figure \@ref(fig:ARIMA-distant-future-forecast), the confidence interval gets wider as the forecast horizon increases.  We are more relatively confident about the short term forecast, but not confident about the long term forecast. 
 
 ```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
 arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52, level = c(95))
@@ -539,7 +690,4 @@ dplyr::bind_rows(lower, upper, level2122) %>%
   knitr::kable()
 ```
 
-> CO2 level reached 420 on the 18th week of 2021, and will reach 500 by 2056
-> CO2 level will be 668 by 2122
 
--------------------------

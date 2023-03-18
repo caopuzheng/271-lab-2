@@ -55,8 +55,6 @@ summary(co2)
 glimpse(co2)
 ```
 
-Figure \@ref(fig:CO2-ETSDA) shows that the $CO_2$ trend has steadily increased over time (close to a linear trend line), although the annual growth rate seems to be range-bound (mostly 0-0.75%) with no clear trend.  $CO_2$  is a greenhouse gas, so the increasing trend has significant implications for global warming.  From the histogram chart, we observed that the $CO_2$ levels are not normally distributed, ranging from 310 to 370 ppmv. There are no extreme outlines in this data set. Furthermore, from the  $CO_2$ Decomposition graph, we observed trend, season and irregular components of the data set.  Aside from the trend line discussed above, we observed strong seasonality, and the remaining irregular effect. 
-
 
 ```{r CO2-ETSDA, echo = FALSE, warning=FALSE, message=FALSE, fig.align='center', out.width="65%", fig.cap="Atmospheric CO2 Level Time Series Overview"}
 co2_enhanced <- co2 %>%
@@ -71,7 +69,7 @@ co2_enhanced <- co2 %>%
 p_3 <- co2_enhanced %>%
   ggplot() +
   aes(x = index, y = annual_growth) +
-  geom_line(color = "steelblue") +
+  geom_line(color = "steelblue") + geom_smooth(method = "lm", color='black') +
   labs(
     title = TeX(r"(Annualized Growth $CO_2$)"),
     subtitle = 'The "Keeling Curve"',
@@ -114,6 +112,11 @@ par(mar = c(4, 4, 0.1, 0.1))
 (p_5_add | p_3) / (p_4 | p_6_add)
 ```
 
+```{r }
+mean_growth_rate <- round(mean(co2_enhanced$annual_growth, na.rm=TRUE),2)
+
+```
+Figure \@ref(fig:CO2-ETSDA) shows that the $CO_2$ trend has steadily increased over time (close to a linear trend line). The annual growth rate is range-bound (mostly 0-0.75%), with a slight upward trend and an average annual long term growth rate of $`r mean_growth_rate`$%.  $CO_2$  is a greenhouse gas, so the increasing trend has significant implications for global warming.  From the histogram chart, we observed that the $CO_2$ levels are not normally distributed, ranging from 310 to 370 ppmv. There are no extreme outlines in this data set. Furthermore, from the  $CO_2$ Decomposition graph, we observed trend, season and irregular components of the data set.  Aside from the trend line discussed above, we observed strong seasonality, and the remaining irregular effect. 
 
 ```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
 # box plot
@@ -132,7 +135,7 @@ plot(co2, col = "red")
 
 ## (3 points) Task 2a: Linear time trend model
 
-As discussed in the $CO_2$ Data section above, the $CO_2$ time series data set follows closely to a linear trend line, so we will first explore a linear regression model for the data set. Given both the original data series and its annual growth rate are range-bound with no clear sign of exponential growth and increased variance with time, we don`t think it is necessary to perform a logarithmic transformation. This is supported by both Figure \@ref(fig:CO2-ETSDA) and Figure \@ref(fig:logarithmic-transformation). In these plots, the series variance does not seem to change over time, and the trend does not have major curvature. Thus a logarithmic transformation is not needed for this data set.
+As discussed in the $CO_2$ Data section above, the $CO_2$ time series data set follows closely to a linear trend line, so we will first explore a linear regression model for the data set. Given both the original data series and its annual growth rate having only a slight upward trend, we don't see significant sign of exponential growth and increased variance with time. Hence we don`t think it is necessary to perform a logarithmic transformation. This is supported by both Figure \@ref(fig:CO2-ETSDA) and Figure \@ref(fig:logarithmic-transformation). In these plots, the series variance does not seem to change over time, and the trend does not have major curvature. Thus a logarithmic transformation is not needed for this data set.
 
 In the linear trend model, we use time as the explanatory variable and $CO_2$ level as the response variable. Reported in Table 1, this model has an intercept term and a positive slope of 1.3. Both coefficients are statistically significant, with p-value less than 0.001. The model residuals, Figure \@ref(fig:linear-quadratic-model-plot) (lelf), is curved, which violates the assumption of independent and identically distributed residuals with zero mean expectation. Variance increases as the fitted values increase, which violates the homoskedasticity assumption of classical linear model. Clearly this simple model failed to sufficiently capture the data characteristics.
 
