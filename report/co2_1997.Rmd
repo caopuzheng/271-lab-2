@@ -41,10 +41,10 @@ library(blsR)
 
 ## (3 points) Task 0a: Introduction
 
-If you are concerned about global warming (or question whether this is true), you may have heard about the "Keeling Curve" which is named after the scientist Charles David Kneeling. Kneeling started measuring and monitoring the accumulation of carbon dioxide ($CO_2$) in the atmosphere in 1958. Many scientists credit the Keeling curve with first bringing our attention to the current increase of $CO_2$ in the atmosphere. The one key question in people's minds is whether the CO2 increase trend observed in the past will continue and at what speed, over the next few decades. The answer to this question is critical to our policy makers and environmentalists, as the forecast $CO_2$ results will help them evaluate how concerned they should be and what actions to take to minimize the consequences. We will conduct the study of the $CO_2$ data set to answer this question. We plan to explore the data set and modeling alternatives to determine whether a reliable forecast model can be developed to forecast through the year of 2022.
+If you are concerned about global warming (or wonder whether this is true or not), you may have heard about the "Keeling Curve" which is named after the scientist Charles David Kneeling. Kneeling started measuring and monitoring the accumulation of carbon dioxide ($CO_2$) in the atmosphere in 1958. Many scientists credit the Keeling curve with first bringing our attention to the current increase of $CO_2$ in the atmosphere. The one key question in people's minds is whether $CO_2$ will continue to go up and at what speed, over the next few decades. The answer to this question is critical to our policy makers and environmentalists. The forecast $CO_2$ results will help them evaluate how concerned they should be and what actions to take to minimize the consequences. In order to answer this question, we will conduct the study of the $CO_2$ data set and develop a model(s) to forecast $CO_2$.
 
 ## (3 points) Task 1a: CO2 data
-The CO2 data, tracking the atmospheric $CO_2$ level in part per million by volumne (ppmv), was measured continuously at the Mauna Loa Observatory in Hawaii from 1958 to the present day (the end of 1997). In the data set, there are a total of 468 monthly observations from January 1958 to December 1997 with no missing data. Prior to this effort, measurements of $CO_2$ concentrations had been taken on an ad hoc basis at a variety of locations. Keeling created a frequent and consistent measurement framework of $CO_2$. Keeling and his collaborators measured the incoming ocean breeze above the thermal inversion layer to minimize local contamination from volcanic vents. The data were normalized to remove any influence from local contamination. His work minimized the data noises due to measurement errors or differences.
+The CO2 data, tracking the atmospheric $CO_2$ level in part per million by volumne (ppmv), was measured continuously at the Mauna Loa Observatory in Hawaii since 1958. This data has 468 monthly observations, from January 1958 to December 1997 (no missing data). Prior to this effort, measurements of $CO_2$ concentrations had been taken on an ad hoc basis at a variety of locations. Keeling created a frequent and consistent measurement framework of $CO_2$. Keeling and his collaborators measured the incoming ocean breeze above the thermal inversion layer to minimize local contamination from volcanic vents. The data were normalized to remove any influence from local contamination. 
 
 ```{r basic-information, echo = FALSE, message = FALSE, warning = FALSE, include=FALSE}
 # basic information about the data
@@ -112,20 +112,20 @@ par(mar = c(4, 4, 0.1, 0.1))
 (p_5_add | p_3) / (p_4 | p_6_add)
 ```
 
-```{r }
+```{r, include=FALSE}
 mean_growth_rate <- round(mean(co2_enhanced$annual_growth, na.rm=TRUE),2)
 
 ```
-Figure \@ref(fig:CO2-ETSDA) shows that the $CO_2$ trend has steadily increased over time (close to a linear trend line). The annual growth rate is range-bound (mostly 0-0.75%), with a slight upward trend and an average annual long term growth rate of $`r mean_growth_rate`$%.  $CO_2$  is a greenhouse gas, so the increasing trend has significant implications for global warming.  From the histogram chart, we observed that the $CO_2$ levels are not normally distributed, ranging from 310 to 370 ppmv. There are no extreme outlines in this data set. Furthermore, from the  $CO_2$ Decomposition graph, we observed trend, season and irregular components of the data set.  Aside from the trend line discussed above, we observed strong seasonality, and the remaining irregular effect. 
+Figure \@ref(fig:CO2-ETSDA) shows that $CO_2$ level is trending up over time, with seasonal variability. The annual growth rate is mostly in the range of 0-0.75%, with a modest upward trend. The long run average of the annual growth rates is $`r mean_growth_rate`$%.  Since $CO_2$ is a greenhouse gas, the increasing trend has significant implications for global warming. From the histogram chart, we observed that the $CO_2$ levels are not normally distributed, ranging from 310 to 370 ppmv. There is no extreme outliers in this data set. Furthermore, the $CO_2$ Decomposition graph shows the upward trend, seasonal effect and irregular components of the data set.  
 
-```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Seasonality CO2 Level Monthly Distribution"}
+```{r boxplot, echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="55%", fig.cap="Seasonality CO2 Level Monthly Distribution", include=FALSE}
 # box plot
 box <- boxplot(co2 ~ cycle(co2, xlab = "Month", ylab = "CO2 (ppmv)", main = "Monthly Mean CO2"))
 max_min_diff <- max(box$stats[3, ]) - min(box$stats[3, ])
 ```
-The boxplot in Figure \@ref(fig:boxplot) further validated the seasonal pattern in the Decomposition graph. The maximum level occurs in May and then decreases during the spring and summer as new plant growth takes $CO_2$ out of the atmosphere. After reaching a minimum in October, the level rises again in the late fall and winter as plants and leaves die off and decay, releasing CO2 back into the atmosphere. The difference between the highest and lowest monthly averages is $`r max_min_diff`$ ppmv.  
+In our analysis, we noted that the maximum level occurs in May and then decreases during the warm seasons as new plant growth takes $CO_2$ out of the air. After reaching a minimum in October, as plants die off in the cold weather, $CO_2$ is released back into the atmosphere. The difference between the peak and trough monthly averages is $`r max_min_diff`$ ppmv.  
 
-```{r logarithmic-transformation, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="CO2 level regular versus logarithmic transformation"}
+```{r logarithmic-transformation, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="CO2 level regular versus logarithmic transformation", include=FALSE}
 # Discuss whether a logarithmic transformation of the data would be appropriate.
 # Refer to LS7
 par(mfrow = c(1, 2))
@@ -135,15 +135,11 @@ plot(co2, col = "red")
 
 ## (3 points) Task 2a: Linear time trend model
 
-As discussed in the $CO_2$ Data section above, the $CO_2$ time series data set follows closely to a linear trend line, so we will first explore a linear regression model for the data set. Given both the original data series and its annual growth rate having only a slight upward trend, we don't see significant sign of exponential growth and increased variance with time. Hence we don`t think it is necessary to perform a logarithmic transformation. This is supported by both Figure \@ref(fig:CO2-ETSDA) and Figure \@ref(fig:logarithmic-transformation). In these plots, the series variance does not seem to change over time, and the trend does not have major curvature. Thus a logarithmic transformation is not needed for this data set.
+As shown in Figure \@ref(fig:CO2-ETSDA) of the $CO_2$ Data section, the $CO_2$ time series data set follows closely to a linear trend line, with a slight curvature. The annual growth rates are range-bound, with a modest upward trend. We don't see a strong sign of exponential growth or increased variance over time. Hence we don`t think it is necessary to perform a logarithmic transformation for this data set.
 
-In the linear trend model, we use time as the explanatory variable and $CO_2$ level as the response variable. Reported in Table 1, this model has an intercept term and a positive slope of 1.3. Both coefficients are statistically significant, with p-value less than 0.001. The model residuals, Figure \@ref(fig:linear-quadratic-model-plot) (lelf), is curved, which violates the assumption of independent and identically distributed residuals with zero mean expectation. Variance increases as the fitted values increase, which violates the homoskedasticity assumption of classical linear model. Clearly this simple model failed to sufficiently capture the data characteristics.
+We will first develop a linear trend model, with time as the explanatory variable. Reported as Model (1)in Table 1, this model has an intercept term and a positive slope of 1.3. Both coefficients are statistically significant, with p-value less than 0.001. The model residuals, Figure \@ref(fig:linear-quadratic-model-plot) (left), is curved, which violates the assumption of independent and identically distributed residuals with zero mean expectation. Variance increases as the fitted values increase, which violates the homoskedasticity assumption of classical linear model. Clearly this simple model failed to sufficiently capture the data characteristics.
 
-We then evaluated the quadratic model by adding the quadratic term of time. The coefficients are reported in Table 1 and are statistically significant. The right plot in Figure \@ref(fig:linear-quadratic-model-plot) shows that the residuals line is still curved. Variance still shows some small level of heteroskedasticity. This model also does not adequately capture the data characteristics.
-
-Finally we fit a polynomial time trend model and incorporate seasonal dummy variables.  We will use the goodness-of-fit information criterion scores measurement to select the polynomial degree that optimizes the model fit. The three goodness-of-fit assessment measurements are AIC, AICc and BIC. Lower AIC, AICc and BIC indicates better model performance. Generally, BIC has a larger penalty for models with more parameters and therefore selects sparser models with fewer parameters compared to AIC and AICc. We ran both AIC and BIC assessments and displayed the result in Figure \@ref(fig:polynomial-trend-seasonality). 
-
-We use a range of 1 to 5 polynomial degrees for the trend variable and don’t recommend trying higher polynomial degrees to avoid over-fitting. This result shows that 3 is the optimal degree with the lowest AIC and BIC score. 
+We then evaluated the quadratic model by adding the quadratic term of time. See Model (2) results in Table 1. The right plot in Figure \@ref(fig:linear-quadratic-model-plot) also shows a curved residuals line. Variance still shows some level of heteroskedasticity. This model also does not adequately capture the data characteristics.
 
 ```{r linear-and-quadratic-models, message=FALSE, warning=FALSE}
 mod.lm1 <- lm(co2 ~ time(co2))
@@ -189,6 +185,8 @@ par(mar = c(2, 2, 2, 2))
 lm_plot | quard_plot
 ```
 
+Finally we fitted a polynomial time trend model and incorporate seasonal dummy variables. We used the goodness-of-fit information criterion to select the polynomial degree that optimizes the model fit. The three goodness-of-fit metrics are AIC, AICc and BIC. Lower AIC, AICc and BIC indicates better model performance. Generally, BIC has a larger penalty for models with more parameters and therefore selects sparser models with fewer parameters, compared to AIC and AICc. We ran both AIC and BIC and displayed the result in Figure \@ref(fig:polynomial-trend-seasonality).  We use a range of 1 to 5 polynomial degrees for the trend variable and don’t recommend trying higher polynomial degrees to avoid over-fitting. This result shows that 3 is the optimal degree with the lowest AIC and BIC score. 
+
 ```{r polynomial-trend-seasonality, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="50%", fig.cap="Polynomial trends selection using information criterions"}
 # Fit a polynomial time trend model that incorporates seasonal dummy variables
 # use this model to generate forecasts to the year 2020.
@@ -232,7 +230,7 @@ bic.plt
 mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
 ```
 
-In Figure \@ref(fig:polynomial-diagnostic), we plot the residuals and noted that residuals have significant positive autocorrelation (not randomly distributed) which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated. While further model improvement is needed, we will use the fitted polynomial model to forecast the $CO_2$ level through 2020 (Figure \@ref(fig:polynomial-forecast)). This polynomial time trend with a seasonal dummy variable was able to capture the linear and seasonal trend when forecasted to 2020. There's a slight curve at the 2020 tail of the trend due to the 3rd degree polynomial.
+Figure \@ref(fig:polynomial-diagnostic) shows that the residuals have significant positive autocorrelation, which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated. While further improvements are necessary, we will use the fitted polynomial model to forecast the $CO_2$ level through 2020 (Figure \@ref(fig:polynomial-forecast)). The forecast results capture the trend and seasonal effect well through 2020. After 2020, the forecast $CO_2$ level trends down due to the 3rd degree polynomial effect.
 
 ```{r polynomial-model-stargazer, echo=FALSE, results = "asis", message = FALSE, warning=FALSE, include=FALSE}
 stargazer(summary(mod.poly)$coefficients,
@@ -272,8 +270,9 @@ abline(v = 2030, col = "red")
 
 ## (3 points) Task 3a: ARIMA times series model
 
-ARIMA model has three parameters (p, d, q). p stands for the number of lag terms in the model, d stands for the number of times the raw observations are differenced, and q stands for the size of the moving average (MA) window. Typically for ARIMA, PACF plot indicates the lag order while ACF indicates how many MA terms are required to remove autocorrelation in the stationary series.
+We will fit a ARIMA model for this data set. This model has three parameters (p, d, q). p stands for the number of lag terms, d stands for the number of times the raw observations are differenced, and q stands for the size of the moving average (MA) window. Typically for ARIMA, PACF plot indicates the lag order while ACF indicates the MA terms needed to transform the data to a stationary time series.
 
+As discussed earlier, this time series has a strong positive trend and seasonal effect and is non-stationary. Figure \@ref(fig:first-order-diff) shows that, after taking a first difference of the data, the resulting time series appears to oscillate around 0. To ensure the it is stationary, we applied the Augmented Dickey-Fuller test, which returns a significant p-value less than 0.05. Thus, we have sufficient evidence to reject the null hypothesis and believe that the time series after the first differencing is stationary. The ACF plot show significant cyclic lags due to seasonality, with no signs of dampening. The PACF plot has significant lags in the first 12 months which dampen after.
 
 ```{r ts-analysis, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="50%", fig.cap="CO2 Level ACF and PACF plots", include=FALSE}
 # first step, no differencing
@@ -285,26 +284,17 @@ co2 %>% ggtsdisplay(main = "")
 diff(co2) %>% ggtsdisplay(main = "")
 ```
 
-```{r adf-test, warning = FALSE}
+```{r adf-test, warning = FALSE, echo=FALSE}
 adf.test(diff(co2))
 ```
-As noted earlier, the time series plot has a strong positive trend and seasonal effect and is non-stationary. Figure \@ref(fig:first-order-diff) shows that, after taking a first difference of the data, the time series plot appears to oscillate around 0. To ensure the it is stationary, we applied the Augmented Dickey-Fuller test, which returns a significant p-value less than 0.05. Thus, we have sufficient evidence to reject the null hypothesis and that the time series after the first differencing is stationary. The ACF has significant cyclic lags due to seasonality, but there are no signs of dampening. The PACF plot has several significant lags until the autocorrelation dampen.
 
-Because the ACF has persistent significant lags while the PACF has dampening oscillations, the data leans towards an AR(3) process. With the differencing component, the ARIMA(p,1,q) model will be the most appropriate. The correct MA and AR parameters will be tested. To select the best model for CO2 level, the BIC information criterion is used because BIC has a larger penalty for models with more parameters and therefore selects sparser models with fewer parameters compared to AIC and AICc.
+Because the ACF has persistent significant lags while the PACF has dampening oscillations, the data leans towards a mixed of AR and MA process, with the first differencing order. Hence the ARIMA(p,1,q) model will be the most appropriate. We will use an iterative process to select the optimal AR and MA parameters based on the goodness-of-fit scores (AIC/AICc/BIC). We chose to use BIC for this process, as BIC has a larger penalty for models with more parameters and tends to select sparser models with fewer parameters compared to AIC and AICc.
 
-```{r model-fitting, echo = FALSE, results = "asis", warning = FALSE}
-# use auto
+```{r model-fitting, results = "asis", warning = FALSE}
+# use auto arima and BIC to optimize AR and MA terms
 mod.arima <- auto.arima(co2, d = 1, ic = "bic", trace = FALSE, seasonal = TRUE)
 knitr::kable(mod.arima$coef,  col.names= "coefs", "latex")
-# summary(mod.arima)
-# SELF-DETERMINED parameters
-# order <- c(1, 1, 2)
-# mod.arima <- arima(co2, order = order, seasonal = list(order = order, period = NA))
-# summary(mod.arima)
-# arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 22 * 12)
-# plot(arima_pred)
 ```
-
 
 ```{r alternative arima selection process, echo=FALSE, include=FALSE}
 # arima_model <-  co2_enhanced %>%
@@ -321,12 +311,13 @@ knitr::kable(mod.arima$coef,  col.names= "coefs", "latex")
 #   gg_tsresiduals()
 ```
 
+The final model is estimated to be ARIMA(0,1,1)(1,1,2)[12] with a BIC of 201.78. Checking the residuals of the model in Figure \@ref(fig:arima-model-residuals), the residuals oscillates around 0. The ACF plot shows no significant autocorrelation, like a white noise process. The Ljung-Box test returns a large p-value of 0.3406, suggesting a very strong evidence that the residuals are stationary. Since the model residuals are stationary, we will use the model to forecast atmospheric CO2 level to 2022 (Figure \@ref(fig:ARIMA-forecast)). Noted that after 2010, the forecast starts to have a wider confidence interval.
 
 ```{r arima-model-residuals, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 Level residuals"}
-checkresiduals(mod.arima)
+checkresiduals(mod.arima) 
+  
 ```
 
-The final model is estimated to be ARIMA(0,1,1)(1,1,2)[12] with a BIC of 201.78. Checking the residuals of the model in Figure \@ref(fig:arima-model-residuals), the residuals plot oscillates around 0. The ACF autocorrelations are all below or only slightly over the threshold value, and the distribution is Gaussian. The Ljung-Box test returns a large p-value of 0.3406, suggesting that there is sufficient evidence to reject the null hypothesis and the residuals are stationary. Since the model residuals are stationary, we decided to perform a forecast on atmospheric CO2 level to 2022 (Figure \@ref(fig:ARIMA-forecast)). Noted that in the figure after 2010, the forecast starts to curve with a wider confidence interval.
 
 ```{r ARIMA-forecast, message=FALSE, warning=FALSE ,fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 level 2022 forecast"}
 arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 25 * 12)
@@ -336,6 +327,7 @@ plot(arima_pred)
 
 ## (3 points) Task 4a: Forecast atmospheric CO2 growth
 
+To gauge the future accumulated atmospheric $CO_2$ levels, we used the ARIMA model to forecast when $CO_2$ level will hit certain target. Our model forecasts that the atmospheric $CO_2$ level will reach 420 ppm by May 2031 and 500 ppm by Oct 2086. By Jan 2100, CO2 levels will reach 524 ppm. We are not confident about these predictions because the lower bound of the confidence interval has plateaued at approximately 390 ppm while the upper bound continues to grow higher. While the model results has a wide confidence interval, the actual level accumulation could dramatically exceed the forecast level. Since $CO_2$ is a green house gas, any actions that we take now could prevent drastic damages in the future.
 
 ```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE ,fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 Level distant future forecast", include=FALSE}
 arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 110 * 12)
@@ -353,11 +345,18 @@ upper <- data.frame(arima_pred) %>%
   tail(1)
 level2100 <- data.frame(arima_pred)["Jan 2100", ]
 co2_bounds <- rbind(lower, upper, level2100)
-data.frame(co2_bounds)
+
+data.frame(round(co2_bounds,0)) %>%
+  knitr::kable()
 ```
-To demonstrate future accumulated atmospheric $CO_2$ level, we ran a forecast to see when $CO_2$ level will hit certain target. Based on the model forecasts the atmospheric $CO_2$ level is expected to reach 420 ppm by May 2031 and 500 ppm by Oct 2086. By Jan 2100, CO2 levels will be at 523.5 ppm. We are not confident about these predictions because the lower bound of the confidence interval has plateaued at approximately 390 ppm while the upper bound continues to grow higher. While the model results has a wide confidence interval, the actual level accumulation could dramatically exceed the forecast level. Since $CO_2$ is a green house gas, any actions that we take now could prevent drastic damage in the future.
+
 
 ```{r extra plots, echo = FALSE, message = FALSE, include=FALSE}
+
+########################################
+#The codes below are for references only
+########################################
+
 p_1 <- tsibble::as_tsibble(co2) %>%
   ggplot() +
   aes(x = index, y = value) +
@@ -434,6 +433,9 @@ p_8_multi <- components(dcmp_multi) %>%
 ```
 
 ```{r include=FALSE}
+########################################
+#The codes below are for references only
+########################################
 # plot the residuals
 par(mfrow = c(2, 2))
 plot(mod.lm1, which = c(1, 2), main = "Linear Model", cex.main = 1, cex.sub = 0.8, cex.lab = 0.8, cex.axis = 0.8)
