@@ -165,7 +165,7 @@ p4 <- components(dcmp_add) %>%
 (p1 | p2) / (p3 | p4)
 ```
 
-```{r, include=FALSE }
+```{r, include=FALSE}
 mean_growth_rate <- round(mean(co2_present_enhanced$annual_growth, na.rm = TRUE), 3)
 ```
 
@@ -399,7 +399,7 @@ resid %>%
 
 ## (4 points) Task 5b: Train best models on present data
 
-While the 1997 ARIMA model outperformed the linear models, it still under-predicted actual $CO_2$ levels after 2005. We decided to refit the ARIMA model using the actual data. 
+While the 1997 ARIMA model outperformed the linear models, it still under-predicted actual $CO_2$ levels after 2005. We decided to refit the ARIMA model using the actual data to capture the accelartion of $CO_2$ increase.
 
 We seasonally adjusted the weekly series, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. 
 
@@ -523,7 +523,7 @@ plot_in_sample <- resid_values %>%
   )
 ```
 
-We performed diagnostic analysis of the model residuals to check for residuals stationarity and any assumption violations.  The two ARIMA models have stationary residuals and a normal distribution of the residuals, with a couple of significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which require data transformation to detrend and refit.
+We performed diagnostic analysis of the model residuals to check for residuals stationarity and any assumption violations. The two ARIMA models have stationary residuals and a normal distribution of the residuals, with some significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which is expected as we concluded above: the polynomial model is not a great fit to our data and capture the long term trend of $CO_2$ wost.
 
 ```{r, residuals diagnostic plots, warning=FALSE, include=FALSE}
 # Check the stationarity of the NSA ARIMA model
@@ -637,7 +637,7 @@ plot_out_sample <- resid_out_sample %>%
 plot_in_sample | plot_out_sample
 ```
 
-We calculated each model’s RSME for in-sample and out-of-sample periods, see the table below. The ARIMA Seasonal model has the lowest RSME for the in-sample periods, and the ARIMA Non-Seasonal model has the lowest RSME for the out-of-sample periods.  Out-of-sample period performance is more important, given the unseen data. We concluded that the ARIMA Non-Seasonal model is the best model for this data set.
+We calculated each model’s RSME for in-sample and out-of-sample periods, see the table below. The ARIMA Seasonal model has the lowest RSME for the in-sample periods, and the ARIMA Non-Seasonal model has the lowest RSME for the out-of-sample periods. Out-of-sample period performance is more important, given the forecasting power. We concluded that the ARIMA Non-Seasonal model is the best model for this data set.
 
 ```{r compute-rmse, echo=FALSE, message=FALSE, warning=FALSE}
 # calculate the RSME for out-of-sample errors
@@ -659,9 +659,9 @@ RMSE %>%
 
 ## (3 points) Task Part 6b: How bad could it get?
 
-We used the ARIMA Non-Seasonal model to predict the $CO_2$ levels through 2122.  We projected $CO_2$ to reach 420 ppmv in Week 18 of 2021, which matches the actual data (420 ppmv  in April 2021).  Our model projects the $CO_2$ level to reach 500 ppmv in Week 32, 2056, and reach 670 ppmv by 2122.  
+We used the ARIMA Non-Seasonal model to predict the $CO_2$ levels through 2122.  We projected $CO_2$ to reach 420 ppmv in Week 18 of 2021, which matches the actual data (420 ppmv  in April 2021).  Our model projects the $CO_2$ level to reach 500 ppmv in Week 32, 2056, and reach 671 ppmv by 2122.  
 
-As we observed from the Figure \@ref(fig:ARIMA-distant-future-forecast), the confidence interval gets wider as the forecast horizon increases.  We are more relatively confident about the short term forecast, but not confident about the long term forecast. 
+As we observed from the Figure \@ref(fig:ARIMA-distant-future-forecast), the esitmated confidence interval gets wider as the forecast horizon increases.  We are quite confident about the short term forecast, with the estimated mean of 420 ppmv and variance of 1.6, which gives a confidence interval between 418 and 423 ppmv at 95% confidence. But we are not confident about the long term forecast, with the estimated mean of 671 ppmv and variance of 73013! This will yield a confidence interval between 141 and 1200 ppmv at 95% confidence, which means we are not even sure if the $CO_2$ level will increase or decrease by that time. This is expected as for a time series model though: the more time goes by, the more uncertain the future becomes. 
 
 ```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
 arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52, level = c(95))
@@ -690,12 +690,9 @@ level2122 <- data.frame(arima_pred) %>%
   filter(year(time_index) == 2122) %>%
   head(1)
 
-
 dplyr::bind_rows(lower, upper, level2122) %>%
-  mutate() %>%
-  select(time_index, .mean, value) %>%
-  rename("Forecast CO2 Level" = ".mean", "Time" = "time_index") %>%
+  mutate(interval = hilo(value)) %>%
+  select(time_index, .mean, interval) %>%
+  rename("Time" = "time_index", "Forecast CO2 level" = ".mean", "Confidence Interval" = "interval") %>%
   knitr::kable()
 ```
-
-
