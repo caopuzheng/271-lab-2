@@ -114,7 +114,6 @@ par(mar = c(4, 4, 0.1, 0.1))
 
 ```{r, include=FALSE}
 mean_growth_rate <- round(mean(co2_enhanced$annual_growth, na.rm=TRUE),2)
-
 ```
 Figure \@ref(fig:CO2-ETSDA) shows that $CO_2$ level is trending up over time, with seasonal variability. The annual growth rate is mostly in the range of 0-0.75%, with a modest upward trend. The long run average of the annual growth rates is $`r mean_growth_rate`$%.  Since $CO_2$ is a greenhouse gas, the increasing trend has significant implications for global warming. From the histogram chart, we observed that the $CO_2$ levels are not normally distributed, ranging from 310 to 370 ppmv. There is no extreme outliers in this data set. Furthermore, the $CO_2$ Decomposition graph shows the upward trend, seasonal effect and irregular components of the data set.  
 
@@ -230,8 +229,6 @@ bic.plt
 mod.poly <- tslm(co2 ~ poly(trend, 3) + season)
 ```
 
-Figure \@ref(fig:polynomial-diagnostic) shows that the residuals have significant positive autocorrelation, which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated. While further improvements are necessary, we will use the fitted polynomial model to forecast the $CO_2$ level through 2020 (Figure \@ref(fig:polynomial-forecast)). The forecast results capture the trend and seasonal effect well through 2020. After 2020, the forecast $CO_2$ level trends down due to the 3rd degree polynomial effect.
-
 ```{r polynomial-model-stargazer, echo=FALSE, results = "asis", message = FALSE, warning=FALSE, include=FALSE}
 stargazer(summary(mod.poly)$coefficients,
   header = FALSE,
@@ -251,16 +248,18 @@ plot(mod.poly$residuals)
 plot(forecast::forecast(mod.poly, h = 20 * 12))
 ```
 
+Once fitted, we performed diagnosis on the residuals. We noted that the residuals have significant positive autocorrelation, which will underestimate the standard errors.  Variance is not constant as well. Classical linear regression model assumptions are violated. While further improvements are necessary, we will use the fitted polynomial model to forecast the $CO_2$ level through 2020 (Figure \@ref(fig:polynomial-forecast)). The forecast results capture the trend and seasonal effect well through 2020. After 2020, the forecast $CO_2$ level trends down due to the 3rd degree polynomial effect.
 
-```{r polynomial-diagnostic, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="50%", fig.cap="Polynomial Residuals Diagnostic Plots"}
+```{r polynomial-diagnostic, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, fig.align='center', out.width="50%", fig.cap="Polynomial Residuals Diagnostic Plots"}
 # set test=FALSE so we don't need to print out the Breusch-Godfrey(BG) test result. Set Test=True to print out the BG results
+par(mar = c(1, 1, 1, 1)) 
 checkresiduals(mod.poly, test = FALSE)
 ```
 
 
 ```{r polynomial-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="50%", fig.cap="Linear model with polynomial trend and dummy seasonality forecast"}
 # forecast to 2030 December
-par(mar = c(2, 2, 2, 2)) 
+par(mar = c(2,2,2,2)) 
 fit_2030 <- forecast::forecast(mod.poly, level = 95, h = 33 * 12, robust = TRUE)
 plot(fit_2030)
 abline(v = 2020, col = "red")
@@ -315,9 +314,7 @@ The final model is estimated to be ARIMA(0,1,1)(1,1,2)[12] with a BIC of 201.78.
 
 ```{r arima-model-residuals, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 Level residuals"}
 checkresiduals(mod.arima) 
-  
 ```
-
 
 ```{r ARIMA-forecast, message=FALSE, warning=FALSE ,fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 level 2022 forecast"}
 arima_pred <- forecast::forecast(mod.arima, level = c(95), h = 25 * 12)
@@ -349,97 +346,3 @@ co2_bounds <- rbind(lower, upper, level2100)
 data.frame(round(co2_bounds,0)) %>%
   knitr::kable()
 ```
-
-
-```{r extra plots, echo = FALSE, message = FALSE, include=FALSE}
-
-########################################
-#The codes below are for references only
-########################################
-
-p_1 <- tsibble::as_tsibble(co2) %>%
-  ggplot() +
-  aes(x = index, y = value) +
-  geom_line(color = "steelblue") +
-  labs(
-    title = TeX(r'(Monthly Mean $CO_2$)'),
-    subtitle = 'The "Keeling Curve"',
-    x = "Month and Year",
-    y = TeX(r'($CO_2$ parts per million)')
-  ) +
-  theme(plot.title = element_text(size = 10))
-
-
-# plot the log value
-p_2 <- co2_enhanced %>%
-  ggplot() +
-  aes(x = index, y = log_value) +
-  geom_line(color = "steelblue") +
-  labs(
-    title = TeX(r"(Log Monthly Mean $CO_2$)"),
-    subtitle = 'The "Keeling Curve"',
-    x = "Month and Year",
-    y = TeX(r"(Log of $CO_2$ parts per million)")
-  ) +
-  theme(plot.title = element_text(size = 10))
-
-
-# plot ACF of residuals
-p_7_add <- components(dcmp_add) %>%
-  ACF(remainder) %>%
-  autoplot() + labs(title = "ACF Residuals additive decomposition") +
-  theme(plot.title = element_text(size = 10))
-
-# plot PACF of residuals
-p_8_add <- components(dcmp_add) %>%
-  PACF(remainder) %>%
-  autoplot() + labs(title = "PACF Residuals additive decomposition") +
-  theme(plot.title = element_text(size = 10))
-```
-
-```{r multiplicative SLT decomposting, echo = FALSE, message = FALSE, include=FALSE}
-dcmp_multi <- co2_enhanced %>%
-  model(stl = STL(log_value))
-
-p_5_multi <- components(dcmp_multi) %>%
-  as_tsibble() %>%
-  autoplot(log_value, colour = "gray") +
-  geom_line(aes(y = trend), colour = "#D55E00") +
-  labs(
-    y = TeX(r'(Log $CO_2$ Annualized Growth Rate)'),
-    x = "Month and Year",
-    title = "Monthly Mean CO2"
-  ) +
-  theme(plot.title = element_text(size = 10))
-
-# plot the componentsco
-p_6_multi <- components(dcmp_multi) %>%
-  autoplot() + theme(plot.title = element_text(size = 10))
-
-# plot ACF of residuals
-p_7_multi <- components(dcmp_multi) %>%
-  ACF(remainder) %>%
-  autoplot() + labs(title = "ACF Residuals multiplicative decomposition") +
-  theme(plot.title = element_text(size = 10))
-
-# plot PACF of residuals
-p_8_multi <- components(dcmp_multi) %>%
-  PACF(remainder) %>%
-  autoplot() + labs(title = "PACF Residuals multiplicative decomposition") +
-  theme(plot.title = element_text(size = 10))
-
-# (p_5_multi | p_6_multi) / (p_7_multi | p_8_multi)
-# > trend: strong positive linear trend across years irregular elements: The data oscilate around 0. From the ACF plot, residuals have strong autocorrelation terms, indicating trend and seasonal variation. The PACF plot ocilates with many significant lags seasonality: strong seasonality - will explore details in next plot
-```
-
-```{r include=FALSE}
-########################################
-#The codes below are for references only
-########################################
-# plot the residuals
-par(mfrow = c(2, 2))
-plot(mod.lm1, which = c(1, 2), main = "Linear Model", cex.main = 1, cex.sub = 0.8, cex.lab = 0.8, cex.axis = 0.8)
-
-plot(mod.lm2, which = c(1, 2), main = "Quadratic Model", cex.main = 1, cex.lab = 0.8, cex.axis = 0.8)
-```
-
