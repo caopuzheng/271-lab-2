@@ -33,7 +33,7 @@ library(fpp2)
 ```
 
 ## (3 points) Task 0b: Introduction 
-In our 1997 report, we developed the linear models and the ARIMA model to forecast $CO_2$ through 2020 and beyond. The $CO_2$  level increased from 360 ppmv in December 1997 to 420 ppmv in February 2023. The 420 ppmv level was at the higher end of our forecast range (385-424 ppmv) with 95% confidence.  In this follow-up study, we will compare our 1997 forecast to the actuals, and further enhance the model performance. 
+In our 1997 report, we developed a linear models and an ARIMA model to forecast $CO_2$ through 2020 and beyond. Since then the $CO_2$  level increased from 360 ppmv in December 1997 to 420 ppmv in February 2023. The 420 ppmv level was at the higher end of our forecast range (385-424 ppmv) with 95% confidence.  In this follow-up study, we will compare our 1997 forecast to the actuals, and further enhance the model performance. 
 
 The original data set was a monthly series and the new data set has both monthly and weekly frequency. Also, due to the eruption of the Mauna Loa Volcano, measurements from Mauna Loa Observatory were suspended as of 11/29/2022. Observations starting in December 2022 are from a site at the Maunakea Observatories, ~21 miles north of the original site. We believe the site change did not pose a significant impact on the data generation process.
 
@@ -52,7 +52,7 @@ We sourced the weekly and monthly data set from the United States' National Ocea
 # write.csv(co2_present_raw, "co2_present_raw.csv", row.names = FALSE)
 
 #In case the above website is down, we downloaded the dataset 
-co2_present_raw <- read.csv("C:\\Users\\lisaw\\Desktop\\MIDS_class\\w271\\Lab_2\\271_team_lab_2\\report\\co2_present_raw.csv")
+co2_present_raw <- read.csv("./co2_present_raw.csv")
 
 # head(co2_present_raw)
 ```
@@ -84,7 +84,7 @@ co2_present_raw %>%
 # write.csv(co2_present_month, "report/co2_present_month.csv", row.names = FALSE)
 
 #In case the above website is down, we downloaded the dataset 
-co2_present_month <- read.csv("C:\\Users\\lisaw\\Desktop\\MIDS_class\\w271\\Lab_2\\271_team_lab_2\\report\\co2_present_month.csv")
+co2_present_month <- read.csv("./co2_present_month.csv")
 
 # remove outliers and replace with monthly average
 co2_present_raw <- co2_present_raw %>%
@@ -201,7 +201,7 @@ We also noted that the peak $CO_2$ month is April (instead of May in the 1997 re
 
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
-In our 1997 report, we developed the two linear models: a linear model using time as the single variable, and a polynomial model using the third polynomial degree of trend and seasonality. We used these models to forecast the $CO_2$ level through 2020 and beyond. In comparison of the forecast results to the actuals through the present period (February 2023), we noted that both models underestimated the $CO_2$ levels. In a relative term, the linear model outperformed the polynomial model in the long run, which indicated the over-fitting issues of the third degree polynomial model. See the comparison in Figure 2.
+In our 1997 report, we developed the two linear models: a linear model using time as the single variable, and a polynomial model using the third polynomial degree of trend and seasonality. We used these models to forecast the $CO_2$ level through 2020 and beyond. In comparison of the forecast results to the actuals through the present period (February 2023), we noted that both models underestimated the $CO_2$ levels. In a relative term, the linear model outperformed the polynomial model in the long run, which indicated the over-fitting issues of the third degree polynomial model. See the comparison in right char in Figure 2.
 
 The actual level $CO_2$ was 420 ppmv in February 2023. The linear model projected a straight trend line (without any seasonal effect) and forecasted $CO_2$ to reach 395 ppmv in February 2023. The polynomial model captured the seasonal effect and projected increasing levels until the mid-2021 and then flattened and shifted downward.  The polynomial model forecasted 384 ppmv in February 2023. 
 
@@ -240,7 +240,7 @@ prediction_ts <- prediction_ts %>% add_column(
   arima_forecast = arima_forecast$mean
 )
 ```
-```{r, forecast-compare-RSME, echo=FALSE, message=FALSE, warning=FALSE, out.width="75%", fig.cap="Model Prediction vs Actual (Left) and Model Prediction Biases (Right)"}
+```{r, forecast-compare-RSME, echo=FALSE, message=FALSE, warning=FALSE,  fig.align='center', out.width="75%", fig.cap="Model Prediction vs Actual (Left) and Model Prediction Biases (Right)"}
 # visualize the forecast vs the actual
 predict_compare <- prediction_ts %>%
   ggplot() +
@@ -407,9 +407,7 @@ resid %>%
 
 ## (4 points) Task 5b: Train best models on present data
 
-While the 1997 ARIMA model outperformed the linear models, it still under-predicted actual $CO_2$ levels after 2005. We decided to refit this model using the actuals to capture the accelerated $CO_2$ increase.
-
-We seasonally adjusted the weekly series, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. 
+While the 1997 ARIMA model outperformed the linear models, it still under-predicted actual $CO_2$ levels after 2005. We decided to refit this model using the actuals to capture the accelerated $CO_2$ increase. In addition, we also seasonally adjusted the weekly series, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. 
 
 In our 1997 model fit process, we discussed the rationale of using BIC as the goodness-of-fit assessment criteria to choose the best model fit (Task 3a).  We believe this process is still appropriate for the SA and NSA data series. We will choose the best ARIMA models with the lowest BIC score.
 
@@ -474,23 +472,24 @@ co2_test <- co2_present_enhanced %>%
 Using this model optimization process, we selected the best ARIMA model for the weekly NSA data series (“ARIMA Non-Seasonal Model”) as ARIMA(0,1,1)(2,1,0)[52].  This model has seasonal parameters.  The best ARIMA model for the weekly SA series (“ARIMA Seasonal Model”) is ARIMA(1,1,1) with drift, which does not have seasonal parameters given the data was seasonally adjusted. All coefficients for the ARIMA models are significant, see the model results below.  We also fitted a third degree polynomial model to the SA data series (“Polynomial Seasonal”).
 
 ```{r estimating-weekly-arima-model, echo=FALSE, message=FALSE, warning=FALSE}
+# train test split the data
 co2.weekly.arima.nsa <- co2_train %>%
   model(nsa_arima = ARIMA(value, ic = "bic"))
-
 co2.weekly.arima.nsa %>% report()
 ```
 
 ```{r visualzied-fitted-models, echo=FALSE, message=FALSE, warning=FALSE}
+# fitting seasonality adjusted arima
 co2.weekly.arima.sa <- co2_train %>%
   model(sa_arima = ARIMA(
     seasonal_adj_value ~ 1 + pdq(0:10, 1, 0:10) + PDQ(0, 0, 0),
     ic = "bic", stepwise = FALSE, greedy = FALSE
   ))
-
 co2.weekly.arima.sa %>% report()
 ```
 
 ```{r polynomial-sa-fit, echo=FALSE, message=FALSE, warning=FALSE}
+# re-fitting cubic polynomial model
 fit_cubic_season <- co2_train %>%
   model(trend_model = TSLM(seasonal_adj_value ~ trend() + I(trend()^2) + I(trend()^3) + season()))
 # fit_cubic_season %>% report()
@@ -529,9 +528,11 @@ plot_in_sample <- resid_values %>%
     y = "CO2 Level",
     title = "In-Sample Model Residual"
   )
-```
 
-We performed diagnostic analysis of the model residuals to check for residuals stationarity and any assumption violations. The two ARIMA models have stationary residuals and a normal distribution of the residuals, with some significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which is expected as we concluded above. The polynomial model is not a great fit to our data, and not suitable to capture the long term trend of $CO_2$.
+
+
+```
+We performed diagnostic analysis of the model residuals to check for residuals stationary and any assumption violations. The two ARIMA models have stationary residuals and a normal distribution of the residuals, with some significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which is expected as we concluded above. The polynomial model is not a great fit to our data, and not suitable to capture the long term trend of $CO_2$.
 
 ```{r, residuals diagnostic plots, warning=FALSE, include=FALSE}
 # Check the stationarity of the NSA ARIMA model
@@ -544,29 +545,17 @@ checkresiduals(resid_values$sa_resid)
 checkresiduals(resid_values$poly_resid)
 ```
 
-We compared the model residuals for both the in-sample and out-sample periods for the three models, shown in Figure \@ref(fig:in-out-sample-error-plot). Visually, the polynomial model has higher errors than the two ARIMA models for in-sample and out-sample periods.  
-
-```{r in-sample-RSME, echo=FALSE, include=FALSE}
-arima_nsa_rmse_in <- round(sqrt(mean(resid_values$nsa_resid^2)), 3)
-arima_sa_rmse_in <- round(sqrt(mean(resid_values$sa_resid^2)), 3)
-poly_sa_rmse_in <- round(sqrt(mean(resid_values$poly_resid^2)), 3)
-
-RMSE_in <- data.frame(
-  model = c("ARIMA Non-Seasonal", "ARIMA Seasonal", "Polynomial Seasonal"),
-  RMSE_In_Sample = c(arima_nsa_rmse_in, arima_sa_rmse_in, poly_sa_rmse_in)
-)
-
-RMSE_in %>%
-  knitr::kable()
-```
+Once fitted, We compared the model residuals for both the in-sample and out-sample periods for the three models, shown in Figure \@ref(fig:in-out-sample-error-plot). Visually, the polynomial model has higher errors than the two ARIMA models for in-sample and out-sample periods.  
 
 ```{r out-of-sample-forecast, echo=FALSE, message=FALSE, warning=FALSE, out.width="65%"}
+# computing residuals for Non-Seasonally Adjusted out of sample forecast
 resid_out_sample <- co2.weekly.arima.nsa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("arima_nsa_forecast" = ".mean") %>%
   mutate(arima_nsa_resid = co2_test$value - arima_nsa_forecast) %>%
   select(time_index, arima_nsa_resid)
 
+# computing residuals for Seasonally Adjusted out of sample forecast 
 arima.sa.resid <- co2.weekly.arima.sa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("arima_sa_forecast" = ".mean") %>%
@@ -577,6 +566,7 @@ resid_out_sample <- resid_out_sample %>% add_column(
   arima_sa_resid = arima.sa.resid$arima_sa_resid
 )
 
+# computing residuals for Cubic Polynomial out of sample forecast 
 polynomial.sa.resid <- fit_cubic_season %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("polynomial_sa_forecast" = ".mean") %>%
@@ -599,7 +589,7 @@ plot_out_sample <- resid_out_sample %>%
   )
 ```
 
-```{r, in-out-sample-error-plot, fig.cap="In-Sample Model Residuals (Left) Out-Sample Model Residuals (Right)", out.width="75%", echo=FALSE}
+```{r, in-out-sample-error-plot, message=FALSE, warning=FALSE, fig.align='center', fig.cap="In-Sample Model Residuals (Left) Out-Sample Model Residuals (Right)", out.width="75%", echo=FALSE}
 # plot in-sample model residuals for all three models
 plot_in_sample <- resid_values %>%
   ggplot(aes(x = time_index)) +
@@ -645,9 +635,14 @@ plot_out_sample <- resid_out_sample %>%
 plot_in_sample | plot_out_sample
 ```
 
-We calculated each model’s RSME for in-sample and out-of-sample periods, see the table below. The ARIMA Seasonal model has the lowest RSME for the in-sample periods, and the ARIMA Non-Seasonal model has the lowest RSME for the out-of-sample periods. Out-of-sample period performance is more important, given the forecasting power. We concluded that the ARIMA Non-Seasonal model is the best model for this data set.
+We calculated each model’s RSME for in-sample and out-of-sample periods, see the table below. The ARIMA Seasonally Adjusted model has the lowest RSME for the in-sample periods, and the ARIMA Non-Seasonally Adjusted model has the lowest RSME for the out-of-sample periods. Out-of-sample period performance is more important, given the forecasting power. We concluded that the ARIMA Non-Seasonally Adjusted model is the best model for this data set.
 
 ```{r compute-rmse, echo=FALSE, message=FALSE, warning=FALSE}
+# calculate the RSME for in-sample errors
+arima_nsa_rmse_in <- round(sqrt(mean(resid_values$nsa_resid^2)), 3)
+arima_sa_rmse_in <- round(sqrt(mean(resid_values$sa_resid^2)), 3)
+poly_sa_rmse_in <- round(sqrt(mean(resid_values$poly_resid^2)), 3)
+
 # calculate the RSME for out-of-sample errors
 arima_nsa_rmse <- round(sqrt(mean(resid_out_sample$arima_nsa_resid^2)), 3)
 arima_sa_rmse <- round(sqrt(mean(resid_out_sample$arima_sa_resid^2)), 3)
