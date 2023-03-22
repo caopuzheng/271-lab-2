@@ -69,7 +69,8 @@ co2_enhanced <- co2 %>%
 p_3 <- co2_enhanced %>%
   ggplot() +
   aes(x = index, y = annual_growth) +
-  geom_line(color = "steelblue") + geom_smooth(method = "loess", color='black') +
+  geom_line(color = "steelblue") +
+  geom_smooth(method = "loess", color = "black") +
   labs(
     title = TeX(r"(Annualized Growth $CO_2$)"),
     subtitle = 'The "Keeling Curve"',
@@ -108,12 +109,12 @@ p_5_add <- components(dcmp_add) %>%
 p_6_add <- components(dcmp_add) %>%
   autoplot() + theme(plot.title = element_text(size = 10))
 
-par(mar = c(4, 4, 0.1, 0.1)) 
+par(mar = c(4, 4, 0.1, 0.1))
 (p_5_add | p_3) / (p_4 | p_6_add)
 ```
 
 ```{r, include=FALSE}
-mean_growth_rate <- round(mean(co2_enhanced$annual_growth, na.rm=TRUE),2)
+mean_growth_rate <- round(mean(co2_enhanced$annual_growth, na.rm = TRUE), 2)
 ```
 Figure \@ref(fig:CO2-ETSDA) shows that $CO_2$ level is trending up over time, with seasonal variability. The annual growth rate is mostly in the range of 0-0.75%, with a modest upward trend. The long run average of the annual growth rates is $`r mean_growth_rate`$%.  Since $CO_2$ is a greenhouse gas, the increasing trend has significant implications for global warming. From the histogram chart, we observed that the $CO_2$ levels are not normally distributed, ranging from 310 to 370 ppmv. There is no extreme outliers in this data set. Furthermore, the $CO_2$ Decomposition graph shows the upward trend, seasonal effect and irregular components of the data set.  
 
@@ -180,7 +181,7 @@ quard_plot <- ggplot(mod.lm2, aes(.fitted, .resid)) +
   theme(plot.title = element_text(size = 10)) +
   ylim(-5, 5)
 
-par(mar = c(2, 2, 2, 2)) 
+par(mar = c(2, 2, 2, 2))
 lm_plot | quard_plot
 ```
 
@@ -220,7 +221,7 @@ bic.plt <- results %>%
   ylab("AIC/BIC")
 # based on graph, trend degree = 3 and season degree = 4 looks the best
 
-par(mar = c(2, 2, 2, 2)) 
+par(mar = c(2, 2, 2, 2))
 bic.plt
 ```
 
@@ -252,14 +253,14 @@ Once fitted, we performed diagnosis on the residuals. We noted that the residual
 
 ```{r polynomial-diagnostic, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, fig.align='center', out.width="50%", fig.cap="Polynomial Residuals Diagnostic Plots"}
 # set test=FALSE so we don't need to print out the Breusch-Godfrey(BG) test result. Set Test=True to print out the BG results
-par(mar = c(1, 1, 1, 1)) 
+par(mar = c(1, 1, 1, 1))
 checkresiduals(mod.poly, test = FALSE)
 ```
 
 
 ```{r polynomial-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="50%", fig.cap="Linear model with polynomial trend and dummy seasonality forecast"}
 # forecast to 2030 December
-par(mar = c(2,2,2,2)) 
+par(mar = c(2, 2, 2, 2))
 fit_2030 <- forecast::forecast(mod.poly, level = 95, h = 33 * 12, robust = TRUE)
 plot(fit_2030)
 abline(v = 2020, col = "red")
@@ -292,7 +293,7 @@ Because the ACF has persistent significant lags while the PACF has dampening osc
 ```{r model-fitting, results = "asis", warning = FALSE}
 # use auto arima and BIC to optimize AR and MA terms
 mod.arima <- auto.arima(co2, d = 1, ic = "bic", trace = FALSE, seasonal = TRUE)
-knitr::kable(mod.arima$coef,  col.names= "coefs", "latex")
+knitr::kable(mod.arima$coef, col.names = "coefs", "latex")
 ```
 
 ```{r alternative arima selection process, echo=FALSE, include=FALSE}
@@ -313,7 +314,7 @@ knitr::kable(mod.arima$coef,  col.names= "coefs", "latex")
 The final model is estimated to be ARIMA(0,1,1)(1,1,2)[12] with a BIC of 201.78. We analyzed the model residuals to evaluate model performance. Figure \@ref(fig:arima-model-residuals) shows that the residuals oscillates around 0. The ACF plot shows no significant autocorrelation, like a white noise process. The Ljung-Box test returns a large p-value of 0.3406, suggesting a very strong evidence that the residuals are stationary. Since the model residuals are stationary, we will use the model to forecast atmospheric CO2 level to 2022 (Figure \@ref(fig:ARIMA-forecast)). Noted that after 2010, the forecast starts to have a wider confidence interval.
 
 ```{r arima-model-residuals, echo = FALSE, message = FALSE, warning = FALSE, fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 Level residuals"}
-checkresiduals(mod.arima) 
+checkresiduals(mod.arima)
 ```
 
 ```{r ARIMA-forecast, message=FALSE, warning=FALSE ,fig.align='center', out.width="50%", fig.cap="ARIMA(0,1,1)(1,1,2)[12] CO2 level 2022 forecast"}
@@ -343,6 +344,6 @@ upper <- data.frame(arima_pred) %>%
 level2100 <- data.frame(arima_pred)["Jan 2100", ]
 co2_bounds <- rbind(lower, upper, level2100)
 
-data.frame(round(co2_bounds,0)) %>%
+data.frame(round(co2_bounds, 0)) %>%
   knitr::kable()
 ```

@@ -43,15 +43,14 @@ We sourced the weekly and monthly data set from the United States' National Ocea
 
 
 ```{r data-load-pipeline-from-website, echo=FALSE, message=FALSE, warning=FALSE}
-
 # # Load weekly data, and save the raw data for future use
 # co2_present_raw <- read.csv("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv",
 #   sep = ",",
 #   skip = 51
 # )
-# write.csv(co2_present_raw, "co2_present_raw.csv", row.names = FALSE)
+# write.csv(co2_present_raw, "report/co2_present_raw.csv", row.names = FALSE)
 
-#In case the above website is down, we downloaded the dataset 
+# In case the above website is down, we downloaded the dataset
 co2_present_raw <- read.csv("./co2_present_raw.csv")
 
 # head(co2_present_raw)
@@ -83,7 +82,7 @@ co2_present_raw %>%
 # )
 # write.csv(co2_present_month, "report/co2_present_month.csv", row.names = FALSE)
 
-#In case the above website is down, we downloaded the dataset 
+# In case the above website is down, we downloaded the dataset
 co2_present_month <- read.csv("./co2_present_month.csv")
 
 # remove outliers and replace with monthly average
@@ -116,8 +115,7 @@ co2_present %>%
 ```
 
 ```{r CO2-ETSDA, echo = FALSE, warning=FALSE, message=FALSE, fig.align='center', out.width="65%", fig.cap="Atmospheric CO2 Level Time Series Overview"}
-
-# EDA plots 
+# EDA plots
 co2_present_enhanced <- co2_present %>%
   mutate(
     annual_growth = (value - lag(value, n = 52)) / lag(value, n = 52) * 100,
@@ -194,7 +192,7 @@ co2_present_ts <- co2_present_monthly %>%
 # could use geom_boxplot() in ggplot2
 box <- boxplot(co2_present_ts ~ cycle(co2_present_ts, xlab = "Month", ylab = "CO2 (ppmv)", main = "Monthly Mean CO2"))
 
-max_min_diff <- round(max(box$stats[3, ]) - min(box$stats[3, ]),2)
+max_min_diff <- round(max(box$stats[3, ]) - min(box$stats[3, ]), 2)
 max_min_diff
 ```
 We also noted that the peak $CO_2$ month is April (instead of May in the 1997 report) and the lowest month is September (instead of October). The seasonal difference between the peak and trough month is ($`r max_min_diff`$ ppmv), higher than the 5.46 ppmv seasonal difference observed in the original data.  
@@ -528,16 +526,17 @@ plot_in_sample <- resid_values %>%
     y = "CO2 Level",
     title = "In-Sample Model Residual"
   )
-
-
-
 ```
-We performed diagnostic analysis of the model residuals to check for residuals stationary and any assumption violations. The two ARIMA models have stationary residuals and a normal distribution of the residuals, with some significant lags on the ACF plot. The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which is expected as we concluded above. The polynomial model is not a great fit to our data, and not suitable to capture the long term trend of $CO_2$.
+We performed diagnostic analysis of the model residuals to check for residuals stationary and any assumption violations. The two ARIMA models have stationary residuals and a normal distribution of the residuals, with some significant lags on the ACF plot. Please see the plots for the non-seasonal adjusted arima model in Figure \@ref(fig:nsa-residuals-diagnostic-plots) as an example. Both of them are good candidates for our final model selection.
 
-```{r, residuals diagnostic plots, warning=FALSE, include=FALSE}
+The Polynomial Seasonal model residuals are non-stationary and have significant and decaying autocorrelation lags, which is expected as we concluded above. The polynomial model is not a great fit to our data, and not suitable to capture the long term trend of $CO_2$.
+
+```{r, nsa-residuals-diagnostic-plots, warning=FALSE, echo=FALSE, out.width="65%", fig.align='center', fig.cap="Non-seasonal Adjusted ARIMA Model Residual Plots"}
 # Check the stationarity of the NSA ARIMA model
 checkresiduals(resid_values$nsa_resid)
+```
 
+```{r, residuals diagnostic plots, warning=FALSE, include=FALSE}
 # Check the stationarity of the SA ARIMA model
 checkresiduals(resid_values$sa_resid)
 
@@ -555,7 +554,7 @@ resid_out_sample <- co2.weekly.arima.nsa %>%
   mutate(arima_nsa_resid = co2_test$value - arima_nsa_forecast) %>%
   select(time_index, arima_nsa_resid)
 
-# computing residuals for Seasonally Adjusted out of sample forecast 
+# computing residuals for Seasonally Adjusted out of sample forecast
 arima.sa.resid <- co2.weekly.arima.sa %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("arima_sa_forecast" = ".mean") %>%
@@ -566,7 +565,7 @@ resid_out_sample <- resid_out_sample %>% add_column(
   arima_sa_resid = arima.sa.resid$arima_sa_resid
 )
 
-# computing residuals for Cubic Polynomial out of sample forecast 
+# computing residuals for Cubic Polynomial out of sample forecast
 polynomial.sa.resid <- fit_cubic_season %>%
   forecast(h = nrow(co2_test), level = c(95)) %>%
   rename("polynomial_sa_forecast" = ".mean") %>%
@@ -666,7 +665,7 @@ We used the ARIMA Non-Seasonal model to predict the $CO_2$ levels through 2122. 
 
 As we observed from the Figure \@ref(fig:ARIMA-distant-future-forecast), the estimated confidence interval widens as the forecast horizon increases.  We are quite confident about the short term forecast with a tight confidence internal. For example, for week 18 of 2021, our estimated mean is 420 ppmv and variance is 1.6, with a tight range of 418 and 423 ppmv at 95% confidence. However, we are not confident about the long term forecast such as 2122, which has the estimated mean of 671 ppmv and a variance of 73013! This will yield a wide range between 141 and 1200 ppmv at 95% confidence, which means the $CO_2$ level could swing wildly and is not very useful information. The increasing forecast uncertainty is expected for a time series forecast model. The more time goes by, the more uncertain the forecast becomes. 
 
-```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="65%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
+```{r ARIMA-distant-future-forecast, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="50%", fig.cap="Non-Seasonally Adjusted ARIMA forward forecast model"}
 arima_pred <- co2.weekly.arima.nsa %>% forecast(h = 122 * 52, level = c(95))
 
 arima_pred %>%
